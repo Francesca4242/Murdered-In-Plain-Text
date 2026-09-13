@@ -3415,9 +3415,9 @@ The true killer, emboldened by your error, walks free. Checksum-on-the-Wold retu
 &lt;hr class=&quot;rule&quot;&gt;
 
 &lt;div class=&quot;ledger-summary&quot;&gt;
-&lt;strong&gt;Day &lt;&lt;= $day&gt;&gt; of 3.&lt;/strong&gt; &lt;strong&gt;&lt;&lt;= setup.evidenceCount()&gt;&gt;&lt;/strong&gt; of &lt;&lt;= setup.evidence.length&gt;&gt; exhibits recovered.&lt;br&gt;
+&lt;strong&gt;Day &lt;&lt;= $day&gt;&gt; of 3&lt;/strong&gt; &amp;middot; &lt;strong&gt;&lt;&lt;= setup.evidenceCount()&gt;&gt;&lt;/strong&gt; of &lt;&lt;= setup.evidence.length&gt;&gt; exhibits recovered&lt;br&gt;&lt;br&gt;
 Keystone exhibits &amp;mdash; the three an accusation cannot stand without:&lt;br&gt;
-&lt;&lt;for _i, _item range setup.keystones()&gt;&gt;&lt;&lt;if setup.has(_item.id)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;&lt;= _item.title&gt;&gt;&lt;&lt;else&gt;&gt;&lt;span class=&quot;bad&quot;&gt;&amp;#10007;&lt;/span&gt; &lt;span class=&quot;dim&quot;&gt;not yet recovered&lt;/span&gt;&lt;&lt;/if&gt;&gt;&lt;br&gt;&lt;&lt;/for&gt;&gt;
+&lt;&lt;for _i, _item range setup.keystones()&gt;&gt;&lt;&lt;if setup.has(_item.id)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;&lt;= _item.title&gt;&gt; &lt;span class=&quot;dim&quot;&gt;&amp;mdash; &lt;&lt;= _item.where&gt;&gt;&lt;/span&gt;&lt;&lt;else&gt;&gt;&lt;span class=&quot;bad&quot;&gt;&amp;#10007;&lt;/span&gt; &lt;span class=&quot;dim&quot;&gt;Keystone &lt;&lt;= _i + 1&gt;&gt; &amp;mdash; still out there, on day &lt;&lt;= _item.day&gt;&gt;&lt;/span&gt;&lt;&lt;/if&gt;&gt;&lt;br&gt;&lt;&lt;/for&gt;&gt;
 &lt;/div&gt;
 
 &lt;div class=&quot;evidence-grid&quot;&gt;

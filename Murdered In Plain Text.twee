@@ -3624,9 +3624,9 @@ The true killer, emboldened by your error, walks free. Checksum-on-the-Wold retu
 <hr class="rule">
 
 <div class="ledger-summary">
-<strong>Day <<= $day>> of 3.</strong> <strong><<= setup.evidenceCount()>></strong> of <<= setup.evidence.length>> exhibits recovered.<br>
+<strong>Day <<= $day>> of 3</strong> &middot; <strong><<= setup.evidenceCount()>></strong> of <<= setup.evidence.length>> exhibits recovered<br><br>
 Keystone exhibits &mdash; the three an accusation cannot stand without:<br>
-<<for _i, _item range setup.keystones()>><<if setup.has(_item.id)>><span class="ok">&#10003;</span> <<= _item.title>><<else>><span class="bad">&#10007;</span> <span class="dim">not yet recovered</span><</if>><br><</for>>
+<<for _i, _item range setup.keystones()>><<if setup.has(_item.id)>><span class="ok">&#10003;</span> <<= _item.title>> <span class="dim">&mdash; <<= _item.where>></span><<else>><span class="bad">&#10007;</span> <span class="dim">Keystone <<= _i + 1>> &mdash; still out there, on day <<= _item.day>></span><</if>><br><</for>>
 </div>
 
 <div class="evidence-grid">
