@@ -1,0 +1,3916 @@
+:: StoryTitle
+Murdered In Plain Text
+
+
+:: StoryData
+{
+  "ifid": "0DD55805-6428-494C-9C8B-1B7096E9D118",
+  "format": "SugarCube",
+  "format-version": "2.37.3",
+  "start": "Start",
+  "name": "Murdered In Plain Text",
+  "tag-colors": {
+    "General": "blue",
+    "Story": "yellow",
+    "Clue": "purple",
+    "Puzzle": "green",
+    "widget": "purple"
+  },
+  "zoom": 1
+}
+
+
+:: StoryInit
+/* Every piece of state the case depends on is declared here, once, so that a
+   puzzle can never write into an undefined object. */
+<<set $player_name to "">>
+<<set $evidence to {}>>
+<<set $attempts to {}>>
+<<set $visited to {}>>
+<<set $navEnabled to false>>
+<<set $day to 0>>
+<<set $accused to "">>
+
+
+:: StoryScript [script]
+/* ------------------------------------------------------------------ *
+ * Murdered In Plain Text - story support code
+ * ------------------------------------------------------------------ */
+
+/* The evidence ledger. Each entry is one provable fact about the case.
+   `keystone` marks the three items the accusation cannot be proven without. */
+setup.evidence = [
+	{
+		id: "forged_note",
+		day: 1,
+		where: "The Study",
+		title: "The Jokerman note",
+		note: "A confession typeset in a font Sir Regex outlawed, signed with a name that fails validation and carrying no checksum. Not a suicide note. A forgery."
+	},
+	{
+		id: "family_tree",
+		day: 1,
+		where: "The Study",
+		title: "The XML lineage fragment",
+		note: "Sir Regex's family recorded as a schema: one son DISOWNED, one niece flagged INVALID with <code>format=\"WebP\"</code>. He had already identified her."
+	},
+	{
+		id: "signature_ledger",
+		day: 1,
+		where: "The Library",
+		title: "The signature ledger",
+		note: "Sir Regex was byte-level identifying his own household. The final row is a sample taken from his niece's certificate of authenticity."
+	},
+	{
+		id: "lossy_tag",
+		day: 1,
+		where: "The Graphics Room",
+		title: "The torn integrity tag",
+		note: "A certificate tag claiming LOSSLESS - PROVENANCE VERIFIED, printed so badly the claim itself is full of compression artefacts. Torn from something."
+	},
+	{
+		id: "tampered_batch",
+		day: 1,
+		where: "The Skull-ery",
+		title: "The broken fixity check",
+		note: "One biscuit in the tearoom batch no longer matches its published manifest. Its contents were altered after delivery."
+	},
+	{
+		id: "ipres_flyer",
+		day: 2,
+		where: "St. Mary of the Lossless",
+		title: "The iPres festival plan",
+		note: "Vicar Vector saw a murder as a publicity event. A motive - but a planner's motive, not a poisoner's."
+	},
+	{
+		id: "font_list",
+		day: 2,
+		where: "The .PUB",
+		title: "The forbidden font list",
+		note: "Colonel Win-ZIP compiled Sir Regex's banned typefaces and kept them for 'future publications'. Whoever set the note in Jokerman had this list."
+	},
+	{
+		id: "love_letter",
+		day: 2,
+		where: "The Post Office",
+		title: "The M.P.G. letter and birth record",
+		note: "A secret affair, and a birth certificate naming Sir Regex as Jay Son Jnr.'s father. Motive enough for two suspects."
+	},
+	{
+		id: "hex_gif",
+		day: 2,
+		where: "The Charming GIF",
+		title: "The restored proto-meme",
+		note: "Sir Regex smashing a looping toy, rendered twelve frames at a time. Merry Loopwell's grudge is real, and thirty years old."
+	},
+	{
+		id: "ewe_an_notice",
+		day: 2,
+		where: "The Village Common",
+		title: "The acquisition notice",
+		note: "Sir Regex was evicting Ewe-an in the language of a deletion policy. Brutal, and a strong motive."
+	},
+	{
+		id: "magic_bytes",
+		day: 2,
+		where: "The Nibble & Byte",
+		title: "TIFF-any's file signature",
+		note: "A RIFF container with the form type WEBP. She is not a lossless TIFF and never was. Her identity is a claim her own bytes refuse.",
+		keystone: true
+	},
+	{
+		id: "codicil",
+		day: 3,
+		where: "The Server Room",
+		title: "The unsigned codicil",
+		note: "Drafted at 19:40 on the night of the murder: TIFF-any struck from the estate for failed authentication. Never signed. He did not live to sign it.",
+		keystone: true
+	},
+	{
+		id: "payload",
+		day: 3,
+		where: "The Dark Archive",
+		title: "The biscuit's payload",
+		note: "The altered biscuit carried a routine that overwrites volatile memory. Enough to stop a man remembering what he meant to sign.",
+		keystone: true
+	},
+	{
+		id: "clippy_confession",
+		day: 3,
+		where: "The Pixelated Passages",
+		title: "Clippy's housekeeping log",
+		note: "The butler's own record of every item he 'tidied'. He did not kill Sir Regex. He normalised the evidence afterwards, on request."
+	}
+];
+
+setup.evidenceById = function (id) {
+	return setup.evidence.filter(function (item) { return item.id === id; })[0];
+};
+
+/* Log a fact. Returns false if it was already known, so callers can avoid
+   announcing the same discovery twice. */
+setup.log = function (id) {
+	var found = State.variables.evidence;
+	if (found[id]) { return false; }
+	found[id] = true;
+	return true;
+};
+
+setup.has = function (id) {
+	return Boolean(State.variables.evidence[id]);
+};
+
+setup.evidenceCount = function () {
+	return Object.keys(State.variables.evidence).length;
+};
+
+setup.keystones = function () {
+	return setup.evidence.filter(function (item) { return item.keystone; });
+};
+
+setup.keystonesHeld = function () {
+	return setup.keystones().filter(function (item) {
+		return setup.has(item.id);
+	}).length;
+};
+
+/* Attempt counters. Every puzzle gets two tries; the second failure is what
+   costs you the clue, so a slip is survivable but carelessness is not. */
+setup.bump = function (key) {
+	var tries = State.variables.attempts;
+	tries[key] = (tries[key] || 0) + 1;
+	return tries[key];
+};
+
+setup.tries = function (key) {
+	return State.variables.attempts[key] || 0;
+};
+
+/* Reading answers back out of plain HTML form controls. */
+setup.val = function (id) {
+	var el = document.getElementById(id);
+	return el ? el.value : "";
+};
+
+setup.checked = function (id) {
+	var el = document.getElementById(id);
+	return Boolean(el && el.checked);
+};
+
+/* Compare free text loosely: case, spacing and punctuation are forgiven,
+   the answer itself is not. */
+setup.norm = function (value) {
+	return String(value == null ? "" : value)
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "");
+};
+
+setup.answered = function (given, accepted) {
+	var target = setup.norm(given);
+	if (!target) { return false; }
+	return accepted.some(function (option) {
+		return setup.norm(option) === target;
+	});
+};
+
+/* Score a set of <select> elements against their expected values. */
+setup.score = function (expected) {
+	return Object.keys(expected).filter(function (id) {
+		return setup.val(id) === expected[id];
+	}).length;
+};
+
+/* An exact-set check for checkbox puzzles: every right box ticked and no
+   wrong ones. Partial credit is not preservation. */
+setup.exactSet = function (all, correct) {
+	var picked = all.filter(setup.checked);
+	return picked.length === correct.length && correct.every(function (id) {
+		return picked.indexOf(id) !== -1;
+	});
+};
+
+setup.pickedCount = function (all) {
+	return all.filter(setup.checked).length;
+};
+
+/* Mark the Start screen so the title card can style itself differently. */
+$(document).on(":passagestart", function (ev) {
+	$("body").toggleClass("start-screen", ev.passage.title === "Start");
+});
+
+/* Record which rooms have actually been entered, so Day 3 can tell the
+   difference between evidence you lost and evidence you never looked for. */
+$(document).on(":passageend", function (ev) {
+	State.variables.visited[ev.passage.title] = true;
+});
+
+/* Accordion panels (Clippy's interrogation answers). */
+$(document).on("click", ".accordion", function () {
+	$(this).toggleClass("active");
+	$(this).next(".panel").slideToggle(200);
+});
+
+/* Let players reveal the clickable regions of a map. Invisible hotspots are
+   atmospheric, but a game you cannot find your way around is not. */
+$(document).on("click", ".map-reveal", function () {
+	$(this).closest(".map-figure").toggleClass("show-hotspots");
+	var shown = $(this).closest(".map-figure").hasClass("show-hotspots");
+	$(this).text(shown ? "Hide room outlines" : "Show room outlines");
+});
+
+
+:: StoryStylesheet [stylesheet]
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* ==================================================================
+   1. Design tokens
+   Every colour and measure in the game resolves to one of these, so the
+   look can be retuned from a single block.
+   ================================================================== */
+:root {
+  --film:        #141312;   /* deepest black, the frame around everything */
+  --ink:         #1C1B1A;   /* page black */
+  --ink-raised:  #24221F;   /* panels sitting on the page */
+  --ink-sunken:  #100F0E;   /* insets, terminals */
+  --paper:       #EDEAE5;   /* body text on dark */
+  --paper-bright:#FFFFF0;   /* headings */
+  --paper-dim:   #9C948A;   /* captions, asides */
+  --gold:        #C89F65;   /* the house accent */
+  --gold-bright: #E4C48F;
+  --ok:          #7FB77E;   /* verified */
+  --bad:         #D98074;   /* corrupt */
+  --rule:        #3A3733;   /* hairlines */
+  --measure:     42rem;     /* comfortable reading width */
+  --radius:      3px;       /* the period allows almost no rounding */
+}
+
+/* ==================================================================
+   2. Page and typography
+   ================================================================== */
+body {
+  background-color: var(--film);
+  color: var(--paper);
+  font-family: 'Libre Baskerville', Georgia, serif;
+  /* Scales with the viewport instead of a flat 150%, which overflowed
+     phones badly. */
+  font-size: clamp(15px, 1.05rem + 0.15vw, 19px);
+  line-height: 1.65;
+  text-align: left;
+}
+
+/* The sidebar is replaced by the in-story case navigation. */
+#ui-bar { display: none; }
+#story { margin-left: 0; }
+
+#passages {
+  max-width: var(--measure);
+  margin: 1.5em auto 4em;
+  padding: 0 1.15rem;
+}
+
+.passage {
+  margin: 0;
+  padding: 0;
+  text-align: left;   /* justified body text was breaking up badly at
+                         narrow widths; justification is now reserved for
+                         the letter and document components */
+  hyphens: auto;
+}
+
+.passage p { margin: 0 0 1em; }
+
+h1, h2, h3 {
+  font-family: 'Cinzel Decorative', 'Libre Baskerville', serif;
+  color: var(--paper-bright);
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(1.7rem, 1.3rem + 2.2vw, 2.9rem);
+  margin: 0.2em 0 0.1em;
+  letter-spacing: 0.01em;
+}
+
+h2 { font-size: clamp(1.25rem, 1.1rem + 1vw, 1.7rem); margin: 1.4em 0 0.5em; }
+h3 { font-size: 1.1rem; margin: 1.2em 0 0.4em; letter-spacing: 0.06em; }
+
+/* A hairline ornament under act and day headings. */
+h1 + .rule, .rule {
+  width: 6rem;
+  height: 1px;
+  margin: 0.9em auto 1.6em;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  border: 0;
+}
+
+blockquote {
+  margin: 1em auto;
+  max-width: 34rem;
+  color: var(--gold-bright);
+  font-style: italic;
+  text-align: center;
+  border: 0;
+}
+
+a { color: var(--gold-bright); }
+a:hover { color: var(--paper-bright); }
+
+code, kbd, pre, .mono {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas,
+               'Courier New', monospace;
+}
+
+code {
+  background: var(--ink-sunken);
+  color: var(--gold-bright);
+  padding: 0.08em 0.35em;
+  border-radius: 2px;
+  font-size: 0.88em;
+  word-break: break-word;
+}
+
+img { max-width: 100%; height: auto; }
+
+.caption {
+  color: var(--paper-dim);
+  font-size: 0.85em;
+  font-style: italic;
+  text-align: center;
+  margin: 0.5em auto 1.2em;
+  max-width: 32rem;
+}
+
+/* ==================================================================
+   3. Buttons and menus
+   ================================================================== */
+.start-menu {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.6em;
+  flex-wrap: wrap;
+  margin: 1.8em 0 0.6em;
+}
+
+.button,
+button.button,
+#passages .link-internal.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;          /* a real touch target */
+  padding: 0.7em 1.15em;
+  background-color: var(--ink);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  text-align: center;
+  text-decoration: none;
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, transform .08s ease;
+}
+
+.button:hover,
+button.button:hover {
+  background-color: var(--gold);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.button:active,
+button.button:active { transform: translateY(1px); }
+
+.button--quiet {
+  border-color: var(--rule);
+  color: var(--paper-dim);
+}
+.button--quiet:hover {
+  background-color: var(--ink-raised);
+  color: var(--paper);
+  border-color: var(--paper-dim);
+}
+
+.button--primary {
+  border-width: 2px;
+  color: var(--gold-bright);
+  font-weight: 700;
+}
+
+/* <<link>> and <<return>> render as plain anchors; they sit beside real
+   buttons in the same menus, so they get the same treatment. */
+.start-menu > a,
+.start-menu > a.link-internal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.7em 1.15em;
+  background-color: var(--ink);
+  color: var(--gold-bright);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, transform .08s ease;
+}
+
+.start-menu > a:hover { background-color: var(--gold); color: var(--ink); transform: translateY(-1px); }
+.start-menu > a::after { content: none; }
+
+/* SugarCube renders every newline in passage source as a <br>. Inside a grid
+   or flex container those become stray items that shove the real content out
+   of place, and between blocks they become dead vertical space. Layout
+   containers therefore drop them; prose, letters and terminal output keep
+   theirs, which is where line breaks are actually meant. */
+.start-menu > br,
+.case-nav > br,
+.map-figure > br,
+.map-tools > br,
+.room-list > br,
+.dossier-grid > br,
+.char-key > br,
+.character-page > br,
+.evidence-grid > br,
+.puzzle > br,
+.puzzle-brief > br,
+.specimen-row > br,
+.question > br,
+.option > br,
+.verdict > br { display: none; }
+
+.brief-sep { display: block; height: 0.8em; }
+
+/* One visible focus treatment for everything keyboard-reachable. */
+a:focus-visible,
+.button:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.hotspot:focus-visible,
+.accordion:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* ==================================================================
+   4. Case navigation
+   ================================================================== */
+.case-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45em;
+  margin: 0 auto 1.8em;
+  padding: 0.55em 0.6em;
+  background: var(--ink);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.8rem;
+}
+
+.case-nav a {
+  color: var(--paper-dim);
+  text-decoration: none;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.35em 0.7em;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.case-nav a:hover {
+  color: var(--gold-bright);
+  border-color: var(--rule);
+}
+
+.case-nav .case-day {
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35em 0.7em;
+  border-right: 1px solid var(--rule);
+  margin-right: 0.2em;
+}
+
+.case-nav .case-tally { color: var(--paper-dim); }
+.case-nav .case-tally strong { color: var(--gold-bright); }
+
+/* ==================================================================
+   5. Silent-movie frame and intertitles
+   ================================================================== */
+.silent-movie-frame {
+  position: relative;
+  background-color: var(--ink);
+  color: var(--paper-bright);
+  padding: clamp(1.2rem, 4vw, 2.2rem);
+  border: 8px solid var(--paper-bright);
+  max-width: var(--measure);
+  margin: 0 auto 1.5em;
+}
+
+.corner {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 2;
+  pointer-events: none;
+}
+/* These pointed at github.com/.../blob/ URLs in a folder that does not
+   exist, so no corner ever loaded. Now relative to the repository root,
+   which also means the game works offline and in any fork. */
+.corner.tl { top: -8px; left: -8px;
+  background-image: url("Images/Border_images/TopLeft.png"); }
+.corner.tr { top: -8px; right: -8px;
+  background-image: url("Images/Border_images/TopRight.png"); }
+.corner.bl { bottom: -8px; left: -8px;
+  background-image: url("Images/Border_images/BottomLeft.png"); }
+.corner.br { bottom: -8px; right: -8px;
+  background-image: url("Images/Border_images/BottomRight.png"); }
+
+.inner { position: relative; z-index: 1; }
+
+/* Day and act cards, in the manner of a silent-film intertitle. */
+.intertitle {
+  max-width: 34rem;
+  margin: 2.5em auto;
+  padding: 2em 1.5em;
+  background: var(--ink);
+  border: 3px double var(--paper-bright);
+  text-align: center;
+}
+
+.intertitle h1, .intertitle h2 { margin-top: 0; }
+
+.intertitle .intertitle-kicker {
+  display: block;
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.8em;
+}
+
+/* ==================================================================
+   6. Maps: responsive, keyboard-reachable hotspots
+   The hotspots used to be absolutely positioned in pixels over a fixed
+   800px image, so they drifted off the rooms as soon as the image had to
+   shrink. They are positioned in percentages now and scale with it.
+   ================================================================== */
+.map-figure {
+  position: relative;
+  display: block;
+  max-width: 800px;
+  margin: 0 auto 0.5em;
+  line-height: 0;
+}
+
+.map-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+}
+
+.hotspot {
+  position: absolute;
+  display: block;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  transition: background-color .2s ease, border-color .2s ease;
+}
+
+.hotspot::after { content: none !important; }   /* no external-link glyph */
+
+.hotspot:hover,
+.map-figure.show-hotspots .hotspot {
+  background-color: rgba(200, 159, 101, 0.16);
+  border-color: var(--gold);
+}
+
+.map-tools {
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  line-height: 1.5;
+  margin-bottom: 1.2em;
+}
+
+.map-reveal {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--paper-dim);
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  padding: 0.45em 0.9em;
+  cursor: pointer;
+  min-height: 2.2rem;
+}
+.map-reveal:hover { color: var(--gold-bright); border-color: var(--gold); }
+
+/* Room labels listed under a map, so the map is never the only way in. */
+.room-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5em;
+  margin: 0 0 1.5em;
+  padding: 0;
+  list-style: none;
+}
+.room-list a {
+  display: block;
+  padding: 0.6em 0.8em;
+  background: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+.room-list a:hover { border-color: var(--gold); background: var(--ink-raised); }
+.room-list .done { color: var(--paper-dim); }
+.room-list .done::before { content: "\2713\00a0"; color: var(--ok); }
+
+/* ==================================================================
+   7. Documents: letters, notes, doormats
+   ================================================================== */
+.letter-style,
+.comic-sans-letter,
+.doormat-style {
+  max-width: 38rem;
+  margin: 1.8em auto;
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  border-radius: var(--radius);
+  text-align: left;
+  text-justify: inter-word;
+}
+
+.letter-style {
+  background: linear-gradient(to bottom, #FDF6E3, #F2E7C9);
+  border: 1px solid #D8CFC4;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.45), inset 0 0 40px rgba(120,96,58,0.10);
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #3A352E;
+  line-height: 1.7;
+}
+
+.letter-style h2, .letter-style h3 { color: #2C2823; }
+.letter-style code { background: rgba(0,0,0,0.07); color: #5A4326; }
+.letter-style hr { border: 0; border-top: 1px solid #D3C7B0; margin: 1.2em 0; }
+
+/* Clippy's interruptions, and every failure state he causes. */
+.comic-sans-letter {
+  background-color: #FDF6E3;
+  border: 2px solid #111;
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.35);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+  color: #141414;
+  line-height: 1.6;
+}
+.comic-sans-letter h2 { font-family: inherit; }
+.comic-sans-letter code { background: rgba(0,0,0,0.08); color: #7A2418; }
+
+.doormat-style {
+  background: repeating-linear-gradient(45deg,
+    #D2B48C, #D2B48C 10px, #C2A679 10px, #C2A679 20px);
+  border: 3px solid #8B6F47;
+  box-shadow: inset 0 0 14px rgba(0,0,0,0.28);
+  font-family: Georgia, serif;
+  color: #332B20;
+  text-align: center;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* ==================================================================
+   8. Digital artefacts: terminals, hex dumps, records
+   ================================================================== */
+.terminal {
+  max-width: 40rem;
+  margin: 1.6em auto;
+  padding: 1.2em 1.3em;
+  background: var(--ink-sunken);
+  border: 1px solid #2E4A33;
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 34px rgba(40, 120, 60, 0.10);
+  color: #B8E0BE;
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.terminal h3 {
+  font-family: inherit;
+  color: #7FD48F;
+  text-align: left;
+  margin: 0 0 0.8em;
+  font-size: 0.86rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.terminal code { background: rgba(127, 212, 143, 0.12); color: #D6F5DB; }
+.terminal .prompt { color: #7FD48F; }
+.terminal .dim { color: #6C8A72; }
+
+.hexdump {
+  overflow-x: auto;
+  margin: 1em 0;
+  padding: 0.9em 1em;
+  background: #0B0A09;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--gold-bright);
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.85;
+  white-space: pre;
+  text-align: left;
+}
+.hexdump .offset { color: #6E665C; }
+.hexdump .hl { background: rgba(200, 159, 101, 0.22); color: #FFF3DC; }
+
+pre {
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 0.9em 1em;
+  background: var(--ink-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* ==================================================================
+   9. Puzzle furniture
+   ================================================================== */
+.puzzle {
+  max-width: 40rem;
+  margin: 1.6em auto;
+  text-align: left;
+}
+
+.puzzle-brief {
+  padding: 1em 1.2em;
+  margin-bottom: 1.4em;
+  background: var(--ink);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.94em;
+}
+
+.puzzle-brief strong { color: var(--gold-bright); }
+
+.question {
+  padding: 1em 1.15em;
+  margin-bottom: 1em;
+  background: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.question > p:first-child { margin-top: 0; }
+.question > p:last-child { margin-bottom: 0; }
+.question .q-no {
+  display: inline-block;
+  min-width: 1.6em;
+  color: var(--gold);
+  font-family: ui-monospace, 'Courier New', monospace;
+}
+
+/* Rows of "tick every one that applies" options. */
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7em;
+  padding: 0.6em 0.7em;
+  margin: 0.35em 0;
+  background: var(--ink-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.option:hover { border-color: var(--gold); }
+.option input { margin-top: 0.35em; flex: 0 0 auto; accent-color: var(--gold); }
+.option span { flex: 1; }
+.option code { font-size: 0.85em; }
+
+/* Native controls are illegible on a dark ground until they are told
+   what colours to use. */
+select, input[type="text"], input[type="number"], textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2.6rem;
+  padding: 0.55em 0.7em;
+  background: var(--ink-sunken);
+  color: var(--paper);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.92rem;
+}
+
+select option { background: var(--ink); color: var(--paper); }
+
+input[type="checkbox"], input[type="radio"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--gold);
+}
+
+.field-label {
+  display: block;
+  margin: 0.9em 0 0.3em;
+  color: var(--paper-dim);
+  font-size: 0.8rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* Two-column layouts inside puzzles (specimen beside its verdict). */
+.specimen-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.7em;
+  padding: 0.9em 1em;
+  margin-bottom: 0.8em;
+  background: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+@media (min-width: 40rem) {
+  .specimen-row { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: center; }
+}
+.specimen-row .specimen {
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.84rem;
+  color: var(--gold-bright);
+  word-break: break-word;
+}
+.specimen-row .specimen small { display: block; color: var(--paper-dim); font-family: 'Libre Baskerville', serif; }
+
+/* Verdict banners after a submission. */
+.verdict {
+  max-width: 40rem;
+  margin: 1.6em auto;
+  padding: 1.3em 1.4em;
+  border-radius: var(--radius);
+  text-align: left;
+}
+.verdict h2 {
+  margin: 0 0 0.6em;
+  text-align: left;
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.verdict--ok  { background: rgba(127,183,126,0.10); border: 1px solid var(--ok); }
+.verdict--ok h2 { color: var(--ok); }
+.verdict--bad { background: rgba(217,128,116,0.10); border: 1px solid var(--bad); }
+.verdict--bad h2 { color: var(--bad); }
+.verdict--warn { background: rgba(200,159,101,0.10); border: 1px solid var(--gold); }
+.verdict--warn h2 { color: var(--gold-bright); }
+
+.attempts {
+  display: inline-block;
+  margin-top: 0.6em;
+  padding: 0.25em 0.6em;
+  border: 1px dashed var(--gold);
+  border-radius: var(--radius);
+  color: var(--gold-bright);
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+}
+
+/* ==================================================================
+   10. The case file
+   ================================================================== */
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.8em;
+  margin: 1em 0 2em;
+  text-align: left;
+}
+
+.evidence-card {
+  padding: 0.95em 1.05em;
+  background: var(--ink);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.88rem;
+}
+
+.evidence-card h3 {
+  margin: 0 0 0.35em;
+  text-align: left;
+  font-family: 'Libre Baskerville', serif;
+  font-size: 0.98rem;
+  letter-spacing: 0;
+  color: var(--paper-bright);
+}
+
+.evidence-card .where {
+  display: block;
+  color: var(--paper-dim);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5em;
+}
+
+.evidence-card p { margin: 0; }
+
+.evidence-card--keystone { border-left-color: var(--ok); }
+.evidence-card--keystone .where { color: var(--ok); }
+
+/* Items you never recovered: present in the index, absent from the file. */
+.evidence-card--missing {
+  border-left-color: var(--bad);
+  border-style: dashed;
+  color: var(--paper-dim);
+}
+.evidence-card--missing h3 { color: var(--paper-dim); }
+.evidence-card--missing .redacted {
+  display: inline-block;
+  background: var(--bad);
+  color: var(--bad);
+  border-radius: 2px;
+  user-select: none;
+}
+
+.ledger-summary {
+  max-width: 40rem;
+  margin: 0 auto 1.5em;
+  padding: 1em 1.2em;
+  background: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.84rem;
+  text-align: left;
+}
+.ledger-summary strong { color: var(--gold-bright); }
+.ledger-summary .ok { color: var(--ok); }
+.ledger-summary .bad { color: var(--bad); }
+
+/* Announcing a new find, inline, where it happens. */
+.logged {
+  display: block;
+  max-width: 40rem;
+  margin: 1.2em auto;
+  padding: 0.7em 1em;
+  background: rgba(127,183,126,0.10);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius);
+  color: var(--ok);
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ==================================================================
+   11. Character dossiers
+   The per-passage copies of this block (one in every character page)
+   are gone; it lives here once.
+   ================================================================== */
+.dossier-grid {
+  display: grid;
+  /* was a hard six columns, which left phone portraits a few pixels wide */
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.7em;
+  width: 100%;
+  margin: 1.2em auto 0;
+}
+
+.char {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.char img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 3px solid transparent;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.char.detective img { border-color: var(--paper-bright); }
+.char.victim    img { border-color: #6E9BD8; }
+.char.witness   img { border-color: var(--ok); }
+.char.suspect   img { border-color: var(--bad); }
+
+.char:hover img { transform: scale(1.03); box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+
+.char .char-name {
+  display: block;
+  margin-top: 0.3em;
+  color: var(--paper-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.char-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.9em;
+  margin: 0.6em 0 0;
+  color: var(--paper-dim);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.char-key span::before {
+  content: "\25A0\00a0";
+  font-size: 1.1em;
+}
+.char-key .k-suspect::before   { color: var(--bad); }
+.char-key .k-victim::before    { color: #6E9BD8; }
+.char-key .k-witness::before   { color: var(--ok); }
+.char-key .k-detective::before { color: var(--paper-bright); }
+
+/* A single character's page. */
+.character-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.2em;
+  max-width: 40rem;
+  margin: 1em auto;
+  text-align: left;
+}
+@media (min-width: 34rem) {
+  .character-page { grid-template-columns: 13rem minmax(0, 1fr); align-items: start; }
+}
+
+.character-page .char-image img {
+  width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+}
+
+.character-page .char-text { line-height: 1.5; }
+.character-page .char-text h2 { margin: 0 0 0.5em; text-align: left; }
+.character-page .char-text p { margin: 0.3em 0; }
+.character-page .char-text b { color: var(--gold); font-weight: 400;
+  font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* ==================================================================
+   12. Accordions (Clippy's answers)
+   ================================================================== */
+.accordion {
+  display: block;
+  width: 100%;
+  background-color: var(--ink);
+  color: var(--gold);
+  cursor: pointer;
+  padding: 0.8em 1em;
+  text-align: left;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: 'Libre Baskerville', serif;
+  font-size: 0.9rem;
+  margin-bottom: 0.4em;
+  transition: background-color .2s;
+}
+
+.accordion:hover, .accordion.active {
+  background-color: var(--ink-raised);
+  color: var(--gold-bright);
+  border-color: var(--gold);
+}
+
+.accordion::after { content: "\002B"; float: right; color: var(--paper-dim); }
+.accordion.active::after { content: "\2212"; }
+
+.panel {
+  display: none;
+  padding: 0.2em 1.1em;
+  margin: -0.2em 0 0.9em;
+  background: var(--ink-raised);
+  border: 1px solid var(--rule);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  text-align: left;
+  font-size: 0.92em;
+}
+
+/* ==================================================================
+   13. Snow, and respecting people who do not want it
+   ================================================================== */
+@keyframes snowfall { to { transform: translateY(105vh); } }
+
+.snowflake {
+  position: fixed;
+  top: -5%;
+  z-index: 9999;
+  background: #FFF;
+  border-radius: 50%;
+  opacity: 0.55;
+  pointer-events: none;
+  animation: snowfall linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snowflake { display: none; }
+  * { animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+}
+
+/* ==================================================================
+   14. Title screen
+   ================================================================== */
+.start-screen #passages { margin-top: 3em; }
+
+.title-card { text-align: center; }
+
+.title-card .byline {
+  color: var(--paper-dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-top: 2.5em;
+}
+
+/* ==================================================================
+   15. Map hotspot grid
+   Measured off the map artwork itself (1600x709, rooms drawn as a
+   4-then-3 dashed grid) and expressed as percentages, so a hotspot
+   stays over its room at every width. The old pixel offsets were
+   measured against a different assumption and sat well below the
+   rooms they were meant to cover.
+   ================================================================== */
+.map-figure .r1 { top: 17.91%; height: 28.77%; }
+.map-figure .r2 { top: 53.17%; height: 28.77%; }
+
+.map-figure .c4-1 { left:  1.06%; width: 24.25%; }
+.map-figure .c4-2 { left: 25.31%; width: 24.31%; }
+.map-figure .c4-3 { left: 49.63%; width: 24.25%; }
+.map-figure .c4-4 { left: 73.88%; width: 24.25%; }
+
+.map-figure .c3-1 { left:  1.06%; width: 32.38%; }
+.map-figure .c3-2 { left: 33.44%; width: 32.38%; }
+.map-figure .c3-3 { left: 65.81%; width: 32.31%; }
+
+
+:: Widgets [widget]
+<<widget "snow">>
+	<<for _i to 0; _i < 40; _i++>>
+		<<set _size to random(2, 7)>>
+		<<set _left to random(0, 100)>>
+		<<set _duration to random(11, 22)>>
+		<<set _delay to random(0, 14)>>
+		<div class="snowflake" style="width: <<print _size>>px; height: <<print _size>>px; left: <<print _left>>vw; animation-duration: <<print _duration>>s; animation-delay: -<<print _delay>>s;"></div>
+	<</for>>
+<</widget>>
+
+/* Log one piece of evidence and announce it, but only the first time. */
+<<widget "logged">>
+	<<if setup.log(_args[0])>>
+		<span class="logged">Logged to case file &mdash; <<= setup.evidenceById(_args[0]).title>></span>
+	<</if>>
+<</widget>>
+
+/* The two-attempt counter shared by every puzzle. */
+<<widget "attemptnote">>
+	<span class="attempts">Attempt <<= setup.tries(_args[0])>> of 2</span>
+<</widget>>
+
+
+:: PassageHeader
+<<if $navEnabled and not ["Start", "Introducing", "Start the game", "Characters", "Case File", "Commendations", "Character Sheets", "The Inspector's Timeline", "End credits"].includes(passage())>>\
+<nav class="case-nav">
+	<span class="case-day">Day <<= $day>></span>
+	<<link "Case file">><<goto "Case File">><</link>>
+	<<link "Dossier">><<goto "Character Sheets">><</link>>
+	<<link "Timeline">><<goto "The Inspector's Timeline">><</link>>
+	<span class="case-tally"><strong><<= setup.evidenceCount()>></strong> / <<= setup.evidence.length>> exhibits</span>
+</nav>
+<</if>>
+
+
+:: Start
+<<snow>>\
+<div class="title-card">
+	<h1>Murdered in Plain Text</h1>
+	<hr class="rule">
+	<blockquote><em>The ASCII was clear, but the motive wasn't.</em></blockquote>
+
+	<div class="start-menu">
+		<button class="button button--primary" data-passage="Introducing">Open the case</button>
+		<button class="button" data-passage="Characters">The village</button>
+	</div>
+
+	<p class="byline">A Bits &amp; Bots mystery &middot; three days &middot; fourteen exhibits</p>
+</div>
+
+
+:: Introducing
+You, the famous digital preservationist detective, need a moniker.
+
+<span class="field-label">Enter the name you will sign your report with</span>
+<<textbox "$player_name" "">>
+
+<div class="start-menu">
+	<<link "Nice to meet you" "Start the game">>
+		<<if $player_name.trim() is "">><<set $player_name to "Detective">><</if>>
+		<<set $player_name to $player_name.trim()>>
+	<</link>>
+</div>
+
+
+:: Start the game [Story]
+Welcome, $player_name. Your reputation precedes you. The pages of <em>The Daily E-Mail</em> and <em>The Checksum Chronicle</em> are filled with your exploits: "The Riddle of the Ghost in the Cloud Storage", "The Mystery of the Misfiled Metadata", and of course your recent triumph in "The Case of the Bit Rot Bandit".
+
+Your skills are legendary. Tonight, they are needed.
+
+It has been a long day of checksum chases. With a weary sigh you sink into your chair, ready to relax with a lukewarm, bitstream-brewed chamomile tea &mdash; perfectly formatted for long-term preservation, unlike your energy levels.
+
+Just as you begin to drift into a pleasant state of data refresh&hellip; <strong>thump</strong>.
+
+Was that a corrupted WAV file echoing through the hallway? Or something far less&hellip; backed up?
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Go and investigate">Run a forensic analysis (go and investigate)</button>
+	<button class="button" data-passage="Head to bed, the chamomile tea has really kicked in">Initiate sleep mode</button>
+	<button class="button button--quiet" data-passage="Profile">Check your own credentials</button>
+</div>
+
+
+:: Profile
+<div class="character-page">
+	<div class="char-image">
+		<img src="Images/Portraits/Detective.png" alt="A portrait of the detective">
+	</div>
+	<div class="char-text">
+		<h2>$player_name</h2>
+		<p><b>Occupation</b><br>Consultant in digital preservation and amateur sleuth</p>
+		<p><b>Favourite location</b><br>Metadata Manor's dusty archives</p>
+		<p><b>Quote</b><br>&ldquo;This could be important evidence.&rdquo;</p>
+		<p><b>Hobby</b><br>Listening to true-crime podcasts at double speed</p>
+		<p><b>Village reputation</b><br>A bit mysterious, but welcomed &mdash; for now</p>
+		<p><b>Pet peeve</b><br>Sticky notes with no metadata</p>
+	</div>
+</div>
+
+<div class="start-menu">
+	<button class="button" data-passage="Start the game">Back to the evening</button>
+</div>
+
+
+:: Go and investigate
+As you peer nervously around the corner, your heart performing an unscheduled backup, you see &mdash; at first glance &mdash; nothing out of the ordinary.
+
+Just your faithful doormat, embossed with its usual friendly greeting:
+
+<div class="doormat-style">Welcome. But Please Migrate Your Shoes First</div>
+
+But then you notice it.
+
+Resting neatly in the middle, perfectly aligned as if digitally deposited, is an envelope. Its edges are crisp &mdash; too crisp. Almost freshly rendered.
+
+It is stamped with today's date and, unmistakably, <em>$player_name</em> in firm archival ink.
+
+<div class="letter-style">Extremely urgent! No, really &mdash; this isn't one of those fake &ldquo;priority metadata&rdquo; notices. Seriously, open me.</div>
+
+The air hums faintly, like a hard drive spinning up in the dark. Somewhere, a faint giggle of corrupted data trails off into silence.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Read the letter">Read the letter</button>
+</div>
+
+
+:: Read the letter
+<div class="letter-style">
+<p>Dear $player_name,</p>
+
+<p>Before you read this, I may well be gone &mdash; checksummed out of existence, perhaps. Troublesome things are afoot. My situation here in Checksum-on-the-Wold has&hellip; fragmented. Everything appears too lossless. The metadata matches too neatly, the streets are overly normalized, and even the parish database never throws an error. Something here has been over-curated, or worse, rebuilt from a malicious backup.</p>
+
+<p>I can no longer distinguish authenticity from duplication. Everyone here smiles with terrifying checksum precision, but no one blinks.</p>
+
+<p>I have spent this month <em>validating my own household</em>, byte by byte, and I do not like what the signatures tell me. One member of my family is not the format they claim to be. My solicitor has the paperwork; I need only sign it.</p>
+
+<p>If this message reaches you uncorrupted, I beg you to come at once. I am afraid I have encountered a dangerous flaw in the family tree.</p>
+
+<p>The only soul I still trust is HUScar Wilde, the village wraith &mdash; half ghost, half sysadmin &mdash; who tends the hedges, and the network, with his chainsaw hands. He alone seems to remember what once was, before the great Reformatting.</p>
+
+<p>Come quickly, before I am migrated to an obsolete format.</p>
+
+<p>Yours, in hash and hope,<br>
+<strong>Sir Regex Metadata IV</strong><br>
+<code>sha256: 9f2c4e&hellip;a17b &mdash; verify before acting</code></p>
+</div>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Fold up the letter">Fold up the letter</button>
+</div>
+
+
+:: Fold up the letter
+As you finish reading, the edges of the letter begin to flicker &mdash; like a corrupted PDF trying to render a missing font. For a moment the words shimmer, rearranging themselves slightly:
+
+<div class="terminal">
+<span class="prompt">&gt;</span> "Before you read this, I may&hellip; gone&hellip; Troublesome&hellip; checksum&hellip; HUS-car Wild&hellip;"
+<span class="dim">&gt; render aborted: authority font not found</span>
+</div>
+
+The flicker lasts only a few seconds, but long enough to make you wonder whether the letter is trying to update its own metadata, or warn you of something unspeakably digital lurking nearby.
+
+You note the hash at the foot of the page and, out of habit, verify it. It matches. Whatever else is false in Checksum-on-the-Wold, this letter is genuinely his.
+
+<em>Remember that.</em> It is the last document in this case you will be able to say that about.
+
+You jump in the car and start driving. Despite the frosty roads, you know it is imperative that you reach Checksum-on-the-Wold in time.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Make way to the village">Make way to the village</button>
+</div>
+
+
+:: Make way to the village [Story]
+<<snow>>\
+Night starts falling, and as you head for Sir Regex's house you see that the snow has set in. You drive faster. The roads to the village and the manor are windy, and you do not want to get snowed in.
+
+When you pass the gates you glance upon a dark figure in the garden, carving a hedge into a shape you cannot quite resolve. Suddenly you get an uneasy feeling, and begin to wonder whether you should have come at all.
+
+You fight your nerves, and park the car.
+
+<div class="start-menu">
+	<button class="button" data-passage="Enter the house 1">Approach along the drive</button>
+</div>
+
+
+:: Enter the house 1
+<img src="Images/manor.png" alt="Metadata Manor at night, under snow">
+<p class="caption">Metadata Manor. Four wings, three days, one unsigned document.</p>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Enter the house">Knock on the door</button>
+</div>
+
+
+:: Enter the house [Story]
+Upon arriving at Metadata Manor you are greeted by Clippy the Butler in the foyer. The butler looks less upset and more like a badly rendered question mark.
+
+"Greetings, Detective $player_name! It looks like you're trying to solve a murder. Would you like some help with that? Sir Regex and I were anticipating your arrival, though not under these&hellip; tragically low-resolution circumstances. The snow has performed a perfect geographic isolation, ensuring you have three days of pure, uninterrupted sleuthing."
+
+He contorts into the shape of a magnifying glass. "I am here to assist. Should you need to rephrase an accusation, or select a properly formatted blunt object, just ask."
+
+You notice that the foyer is immaculate. Not tidy &mdash; immaculate. The kind of clean that takes effort, and takes it recently.
+
+The network is down, the roads are blocked, and a murder has occurred. It is time to find the corrupting element in the system of Checksum-on-the-Wold.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Talk to Clippy">Talk to Clippy</button>
+</div>
+
+
+:: Talk to Clippy [Story]
+"The facts, then. Sir Regex was found in the Study at twenty past eight this evening. No wound, no struggle, no poison the police could name. His pen was uncapped and his desk was bare." Clippy bends thoughtfully into the shape of a bookmark. "A confession was discovered beside him, which I am told closes the matter."
+
+"You do not sound convinced," you say.
+
+"I am a butler. I am not paid to be convinced." He straightens. "I have placed the Manor's structural metadata &mdash; the map &mdash; on the foyer table. We begin proper forensic work tomorrow, but tonight you may deep-scan the crime scene and the adjacent wings. Four rooms are unlocked. I would not delay: things here have a habit of being tidied."
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Day_1_Intro">Take the map</button>
+</div>
+
+
+:: Day_1_Intro [Story]
+<<set $navEnabled to true>>\
+<<set $day to 1>>\
+<div class="intertitle">
+	<span class="intertitle-kicker">Day one of three</span>
+	<h1>The Manor</h1>
+	<hr class="rule">
+	<p>Four rooms are open. Every one of them holds something, and by morning Clippy will have tidied all of it.</p>
+	<p><em>What you write down tonight, you keep. What you leave, you lose.</em></p>
+</div>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Look at the map (Day 1)">Begin the deep scan</button>
+</div>
+
+
+:: Look at the map (Day 1) [Story]
+<h1>Metadata Manor &mdash; Day 1</h1>
+<hr class="rule">
+<p>Four wings are unlocked. The rest of the house is listed as <code>LOCKED</code> and Clippy declines to explain why.</p>
+
+<div class="map-figure">
+	<img src="Images/Manor%20map%20day%201%20and%202.png" alt="Floor plan of Metadata Manor: the Library, Skull-ery, Graphics Room and Study are open; three further rooms are locked.">
+	<a class="hotspot r1 c4-1" data-passage="Explore the Library" aria-label="The Library"></a>
+	<a class="hotspot r1 c4-2" data-passage="Explore the Skull-ery" aria-label="The Skull-ery"></a>
+	<a class="hotspot r1 c4-3" data-passage="Explore the Graphics Room" aria-label="The Graphics Room"></a>
+	<a class="hotspot r1 c4-4" data-passage="Explore The Study" aria-label="The Study"></a>
+</div>
+<div class="map-tools">
+	<button class="map-reveal" type="button">Show room outlines</button>
+</div>
+
+<ul class="room-list">
+	<li><a data-passage="Explore the Library" class="<<if $visited['Explore the Library']>>done<</if>>">The Library</a></li>
+	<li><a data-passage="Explore the Skull-ery" class="<<if $visited['Explore the Skull-ery']>>done<</if>>">The Skull-ery</a></li>
+	<li><a data-passage="Explore the Graphics Room" class="<<if $visited['Explore the Graphics Room']>>done<</if>>">The Graphics Room</a></li>
+	<li><a data-passage="Explore The Study" class="<<if $visited['Explore The Study']>>done<</if>>">The Study (crime scene)</a></li>
+</ul>
+
+<div class="start-menu">
+	<button class="button button--quiet" data-passage="Talk to Clippy 2">Question Clippy</button>
+	<button class="button" data-passage="Go to your room">Call it a day</button>
+</div>
+
+
+:: Talk to Clippy 2
+"How can I assist your investigation, Detective?" Clippy asks, bending into the shape of an interrogation lamp.
+
+<button class="accordion" type="button">Ask about Sir Regex</button>
+<div class="panel">
+	<p>"Sir Regex was a man of&hellip; standards. He believed in strict validation for everything, from file formats to family members. He was recently working on a major update to his personal schemas. It seems he found an invalid entry."</p>
+</div>
+
+<button class="accordion" type="button">Ask about the other residents</button>
+<div class="panel">
+	<p>"A fascinating collection of data types, aren't they? It looks like you're trying to build a list of suspects. Some are more compressed than others. Some loop endlessly. And some&hellip; well, some aren't what they appear to be at all. Would you like me to format that as a bulleted list?"</p>
+</div>
+
+<button class="accordion" type="button">Ask about the murder weapon</button>
+<div class="panel">
+	<p>"The weapon? Ah, a classic query. It appears the cause of deletion was not a physical object but a corruption of the primary directory. A fatal exception, if you will." He briefly flickers into the shape of a knife, a rope, and a poisoned teacup.</p>
+</div>
+
+<button class="accordion" type="button">Ask who tidied the foyer</button>
+<div class="panel">
+	<p>The paperclip goes very still. "I did, Detective. At a quarter past eight." A pause of precisely one frame. "Before the body was found. I am told that is unusual. I find it efficient."</p>
+</div>
+
+<div class="start-menu">
+	<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+</div>
+
+
+:: Explore the Library [Clue]
+You have walked into the Library. On your way in you notice a waste bin, and a crumpled piece of paper beside it that you pick up. Most of it has been scribbled through with the same fountain pen, twice, hard enough to tear. Only a fragment of a PRONOM identifier survives: <code>x-fmt/&hellip;</code>
+
+Someone did not want a format identification to be read.
+
+Then you notice a dim glow on a desk. The archival PC is still logged in, the PRONOM registry open in the browser. Beside the keyboard, open at the last page he wrote, is a hand-ruled ledger titled <em>HOUSEHOLD &mdash; SIGNATURES TAKEN</em>.
+
+<div class="map-figure">
+	<img src="Images/The_Library_Computer.png" alt="An archival PC left logged in, the PRONOM registry open on screen">
+	<a class="hotspot" style="left: 17%; top: 29%; width: 30%; height: 26%;" href="https://www.nationalarchives.gov.uk/PRONOM/BasicSearch/proBasicSearch.aspx?status=new" target="_blank" rel="noopener noreferrer" aria-label="Search the PRONOM registry in a new tab"></a>
+</div>
+<p class="caption">Click the screen to search PRONOM in a new tab. The registry is real; so are the signatures in the ledger.</p>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Library Puzzle">Read the signature ledger</button>
+	<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+</div>
+
+
+:: Library Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>Sir Regex's ledger.</strong> Five specimens, each recorded as the first bytes of a file and nothing else &mdash; no filename, no extension, no claim you could take on trust. He has left the format column blank. Fill it in.
+<span class="brief-sep"></span>
+Two of these specimens begin with the same four bytes. Four bytes are not an identification.
+</div>
+
+<div class="puzzle" id="lib-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen"><code>49 49 2A 00 08 00 00 00</code><small>Specimen A &mdash; loose plate, estate inventory</small></div>
+	<div><select id="libA" aria-label="Format of specimen A">
+		<option value="">&mdash; identify &mdash;</option>
+		<option value="tiff">TIFF</option>
+		<option value="jpeg">JPEG</option>
+		<option value="png">PNG</option>
+		<option value="gif">GIF</option>
+		<option value="pdf">PDF</option>
+		<option value="zip">ZIP (or a ZIP-based container)</option>
+		<option value="wav">WAV</option>
+		<option value="webp">WebP</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen"><code>52 49 46 46 24 08 00 00 57 41 56 45</code><small>Specimen B &mdash; dictation cylinder, transferred 1994</small></div>
+	<div><select id="libB" aria-label="Format of specimen B">
+		<option value="">&mdash; identify &mdash;</option>
+		<option value="tiff">TIFF</option>
+		<option value="jpeg">JPEG</option>
+		<option value="png">PNG</option>
+		<option value="gif">GIF</option>
+		<option value="pdf">PDF</option>
+		<option value="zip">ZIP (or a ZIP-based container)</option>
+		<option value="wav">WAV</option>
+		<option value="webp">WebP</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen"><code>52 49 46 46 90 2C 00 00 57 45 42 50</code><small>Specimen C &mdash; "the portrait in the tea room"</small></div>
+	<div><select id="libC" aria-label="Format of specimen C">
+		<option value="">&mdash; identify &mdash;</option>
+		<option value="tiff">TIFF</option>
+		<option value="jpeg">JPEG</option>
+		<option value="png">PNG</option>
+		<option value="gif">GIF</option>
+		<option value="pdf">PDF</option>
+		<option value="zip">ZIP (or a ZIP-based container)</option>
+		<option value="wav">WAV</option>
+		<option value="webp">WebP</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen"><code>50 4B 03 04 14 00 06 00</code><small>Specimen D &mdash; solicitor's correspondence bundle</small></div>
+	<div><select id="libD" aria-label="Format of specimen D">
+		<option value="">&mdash; identify &mdash;</option>
+		<option value="tiff">TIFF</option>
+		<option value="jpeg">JPEG</option>
+		<option value="png">PNG</option>
+		<option value="gif">GIF</option>
+		<option value="pdf">PDF</option>
+		<option value="zip">ZIP (or a ZIP-based container)</option>
+		<option value="wav">WAV</option>
+		<option value="webp">WebP</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen"><code>89 50 4E 47 0D 0A 1A 0A</code><small>Specimen E &mdash; parish register, digitised</small></div>
+	<div><select id="libE" aria-label="Format of specimen E">
+		<option value="">&mdash; identify &mdash;</option>
+		<option value="tiff">TIFF</option>
+		<option value="jpeg">JPEG</option>
+		<option value="png">PNG</option>
+		<option value="gif">GIF</option>
+		<option value="pdf">PDF</option>
+		<option value="zip">ZIP (or a ZIP-based container)</option>
+		<option value="wav">WAV</option>
+		<option value="webp">WebP</option>
+	</select></div>
+</div>
+
+</div>
+
+<div class="start-menu">
+	<<link "Complete the ledger">>
+		<<set _try to setup.bump("library")>>
+		<<set _right to setup.score({ libA: "tiff", libB: "wav", libC: "webp", libD: "zip", libE: "png" })>>
+		<<if _right is 5>>
+			<<replace "#lib-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Ledger complete</h2>
+					<p>Five signatures, five formats. The two <code>52 49 46 46</code> rows are both RIFF containers &mdash; and RIFF tells you the box, never the contents. Specimen B declares <code>WAVE</code> at offset 8; specimen C declares <code>WEBP</code>.</p>
+					<hr>
+					<p>Sir Regex had got there before you. Below specimen E, in a hand that has begun to shake, there is a sixth row he did not finish:</p>
+					<div class="hexdump"><span class="offset">SPECIMEN F</span>  <span class="hl">52 49 46 46</span> ?? ?? ?? ?? ?? ?? ?? ??
+<span class="offset">SOURCE    </span>  certificate of authenticity, hung in the tea room
+<span class="offset">FORMAT    </span>  <span class="hl">RIFF &mdash; but of what? MUST OBTAIN THE FORM TYPE.</span></div>
+					<p>He was four bytes into identifying a member of his own household, and he knew four bytes were not enough. He needed offset 8. He did not get it.</p>
+					<p><em>You are carrying a Portable Integrity Scanner. It reads offset 8.</em></p>
+				</div>
+				<<logged "signature_ledger">>
+				<div class="start-menu">
+					<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#lib-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Incomplete identification</h2>
+					<p><<= _right>> of the 5 rows agree with the registry. The ledger is pencil; you may rule the wrong ones out and write again.</p>
+					<p>Two specimens open with the same four bytes. Whatever you wrote for those two, at least one of them cannot be right on four bytes alone &mdash; look at what the file declares <em>after</em> them.</p>
+					<<attemptnote "library">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Library Puzzle">Work through the ledger again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#lib-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Helpfully filed</h2>
+					<p>You write in the last row. A cheerful chime sounds from the stacks.</p>
+					<p>"It looks like you're trying to identify a file format!" Clippy says, lifting the ledger neatly out from under your pen. "Misidentification can be so misleading. I'll have this catalogued properly."</p>
+					<p>He is gone before you can object, and so is the ledger. You did not see the sixth row.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Library">Put the ledger down</button>
+</div>
+
+
+:: ColonelWinZIP [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/Cmd%20Win%20Zip.png" alt="Colonel Win-ZIP">
+  </div>
+  <div class="char-text">
+    <h2>Colonel Win-ZIP</h2>
+    <p><b>Occupation</b><br>Retired military man, obsessed with effiency</p>
+    <p><b>Favourite Location</b><br>The .PUB, where he lectures on “properly compressed banter”</p>
+    <p><b>Quote</b><br>“Tighten it up!”</p>
+    <p><b>Hobby</b><br>Folding maps until they’re the size of postage stamps</p>
+    <p><b>Village Reputation</b><br>Grumpy but respected</p>
+    <p><b>Pet Peeve</b><br>Unnecessary expansion</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: ClippordButler [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/Clippy%20the%20Butler.png" alt="Clippord - The Butler">
+  </div>
+  <div class="char-text">
+    <h2>Clippy - The Butler</h2>
+    <p><b>Occupation</b><br>Butler of Metadata Manor</p>
+    <p><b>Favourite Location</b><br>The grand hall, hovering politely in the corner</p>
+    <p><b>Quote</b><br>"Need help picking the perfect murder weapon? I am here to assist you"</p>
+    <p><b>Hobby</b><br>Polishing the floppy disk tray</p>
+    <p><b>Village Reputation</b><br>Helpful… until he isn’t</p>
+    <p><b>Pet Peeve</b><br>All messes</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: EweAn [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/Ewe-an.png" alt="Ewe-an">
+  </div>
+  <div class="char-text">
+    <h2>Ewe-an</h2>
+    <p><b>Occupation</b><br>Keeper of the village RAMs</p>
+    <p><b>Favourite Location</b><br>An open field</p>
+    <p><b>Quote</b><br>“They all wander off eventually.”</p>
+    <p><b>Hobby</b><br>Knitting scarves with binary patterns.</p>
+    <p><b>Village Reputation</b><br>Gentle, but a bit absent-minded</p>
+    <p><b>Pet Peeve</b><br>Stray colons in his log files</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: HUSCarWilde [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/HUS-car%20Wilde.png" alt="HUScar Wilde">
+  </div>
+  <div class="char-text">
+    <h2>HUScar Wilde</h2>
+    <p><b>Occupation</b><br>Hedge-cutter, or so they say</p>
+    <p><b>Favourite Location</b><br>The Manor gardens, where the hedges whisper in patterns</p>
+    <p><b>Quote</b><br>Rarely speaks - when he does, it sounds like static</p>
+    <p><b>Hobby</b><br>Cutting hedges into ASCII art</p>
+    <p><b>Village Reputation</b><br>Best not spoken of</p>
+    <p><b>Pet Peeve</b><br>Overgrown shrubs</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: JaySonJnr [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/Jay%20Son%20Jnr.png" alt="Jay Son Jnr.">
+  </div>
+  <div class="char-text">
+    <h2>Jay Son Jnr.</h2>
+    <p><b>Occupation</b><br></p>
+    <p><b>Favourite Location</b><br>Behind the bar, furiously rearranging bottles</p>
+    <p><b>Quote</b><br>“You’ll need to nest that order properly.”</p>
+    <p><b>Hobby</b><br>Rearranging drink menus into JSON trees</p>
+    <p><b>Village Reputation</b><br>Charismatic but unstable</p>
+    <p><b>Pet Peeve</b><br>Missing brackets</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: LexyCon [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/Lexi%20Con.png" alt="Dr. Lexy Con">
+  </div>
+  <div class="char-text">
+    <h2>Dr. Lexy Con</h2>
+    <p><b>Occupation</b><br>Scholar in the Manor library</p>
+    <p><b>Favourite Location</b><br>A shadowy library corner, where pages whisper</p>
+    <p><b>Quote</b><br>“Shhh… Garamond is speaking."</p>
+    <p><b>Hobby</b><br>Stitching letters into strange ligatures.</p>
+    <p><b>Village Reputation</b><br>Eccentric and unsettling</p>
+    <p><b>Pet Peeve</b><br>Not embedded fonts</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: MerryLoopwell [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/Merry%20Loopwell.png" alt="Merry Loopwell">
+  </div>
+  <div class="char-text">
+    <h2>Merry Loopwell</h2>
+    <p><b>Occupation</b><br>Owner of The Charming GIF Shop</p>
+    <p><b>Favourite Location</b><br>The stock room</p>
+    <p><b>Quote</b><br>“And again, and again, and again…”</p>
+    <p><b>Hobby</b><br>Collecting perpetual-motion toys</p>
+    <p><b>Village Reputation</b><br>Sweet, predictable, sometimes eerie</p>
+    <p><b>Pet Peeve</b><br>Things that don’t loop smoothly</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: MPEGgy [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/MPEG-gy.png" alt="MPEG-gy">
+  </div>
+  <div class="char-text">
+    <h2>MPEG-gy</h2>
+    <p><b>Occupation</b><br>Runs the Plaintext Post Office</p>
+    <p><b>Favourite Location</b><br>The Post Office counter, humming while she sorts</p>
+    <p><b>Quote</b><br>“Oh, I heard about that…”</p>
+    <p><b>Hobby</b><br>Singing gossip as if it were hymnals</p>
+    <p><b>Village Reputation</b><br>Cheerful but cutting</p>
+    <p><b>Pet Peeve</b><br>Letters without stamps</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: SirRegex [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/Sir%20Regex%20Metadata%20IV.png" alt="Sir Regex Metadata IV">
+  </div>
+  <div class="char-text">
+    <h2>Sir Regex Metadata IV</h2>
+    <p><b>Occupation</b><br>Retired patriarch of Metadata Manor</p>
+    <p><b>Favourite Location</b><br>His study at Metadata Manor, filled with dusty type specimens</p>
+    <p><b>Quote</b><br>“That’s not valid syntax.”</p>
+    <p><b>Hobby</b><br>Cataloguing every serif he ever met</p>
+    <p><b>Village Reputation</b><br>Pedantic but respectable</p>
+    <p><b>Pet Peeve</b><br>People who use Comic Sans unironically</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: TIFFani [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/TIFFani.png" alt="TIFFani">
+  </div>
+  <div class="char-text">
+    <h2>TIFFani</h2>
+    <p><b>Occupation</b><br>Tea room hostess at the Nibble and Byte</p>
+    <p><b>Favourite Location</b><br>The tearoom’s back kitchen, where the layers never quite match</p>
+    <p><b>Quote</b><br>"Tea always has layers, darling"</p>
+    <p><b>Hobby</b><br>Stacking pastries higher than physics should allow</p>
+    <p><b>Village Reputation</b><br>Sweet but slightly uncanny</p>
+    <p><b>Pet Peeve</b><br>Misaligned saucers</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: VicarVector [General]
+<div class="character-page">
+  <div class="char-image">
+    <img src="Images/Portraits/vicar.png" alt="Vicar Vector">
+  </div>
+  <div class="char-text">
+    <h2>Vicar Vector</h2>
+    <p><b>Occupation</b><br>Preacher at St Mary of the Lossless</p>
+    <p><b>Favourite Location</b><br>The pulpit, where words scale endlessly</p>
+    <p><b>Quote</b><br>“The eternal line endures.”</p>
+    <p><b>Hobby</b><br>Resizing hymn sheets until unreadable</p>
+    <p><b>Village Reputation</b><br>Inspiring yet confusing</p>
+    <p><b>Pet Peeve</b><br>Misaligned margins</p>
+        
+  </div>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Character Sheets">All the suspects</button>
+</div>
+
+
+:: Explore the Skull-ery [Clue]
+You push open a creaking door into the manor's kitchen, bizarrely labelled the "Skull-ery". The air is thick with the smell of ozone and burnt sugar. It is unnervingly clean, save for a single ornate jar on the counter.
+
+Inside, amongst a few perfectly preserved biscuits, is a half-eaten one shaped like a floppy disk. It emits a faint, almost imperceptible static hum. There are crumbs on the flagstones, near where Sir Regex was found.
+
+Taped inside the lid is the delivery docket. The Nibble &amp; Byte, it seems, ships its baking the way a decent repository ships its holdings: with a manifest, and a digest for every item.
+
+Clippy appears silently at your elbow. "It looks like you've found a snack! TIFF-any's specialty. They say her baking can make you forget your troubles. And your short-term memory. And possibly your own name. Would you like to sample one?"
+
+He winks, an animation you did not think he was capable of.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Skull-ery Puzzle">Run a fixity check on the batch</button>
+	<button class="button button--quiet" data-passage="Talk to Clippy 2">Question Clippy</button>
+	<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+</div>
+
+
+:: Skull-ery Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>Fixity, properly done.</strong> The docket records what the tearoom sent. Your scanner records what is actually in the jar. Set one against the other and give each item a verdict.
+<span class="brief-sep"></span>
+Careful: a digest can only be compared against a digest of the <em>same algorithm</em>. Where the docket and the scanner do not agree on the algorithm, you have not found a problem &mdash; you have found that you cannot tell.
+</div>
+
+<div class="puzzle" id="skull-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen">Shortbread, plain<br>
+		<code>docket &nbsp;SHA-256 4f2a&hellip;9c1d</code><br>
+		<code>scanner SHA-256 4f2a&hellip;9c1d</code></div>
+	<div><select id="skA" aria-label="Verdict for plain shortbread">
+		<option value="">&mdash; verdict &mdash;</option>
+		<option value="ok">Verified</option>
+		<option value="fail">Failed &mdash; contents altered</option>
+		<option value="na">Cannot compare</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Tiffin, layered<br>
+		<code>docket &nbsp;MD5 &nbsp;&nbsp;&nbsp;d41d&hellip;427e</code><br>
+		<code>scanner SHA-256 8b7f&hellip;20aa</code></div>
+	<div><select id="skB" aria-label="Verdict for layered tiffin">
+		<option value="">&mdash; verdict &mdash;</option>
+		<option value="ok">Verified</option>
+		<option value="fail">Failed &mdash; contents altered</option>
+		<option value="na">Cannot compare</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Floppy disk biscuit, 3.5"<br>
+		<code>docket &nbsp;SHA-256 1c09&hellip;e7b2</code><br>
+		<code>scanner SHA-256 <span style="color:#D98074">a55e&hellip;0f31</span></code></div>
+	<div><select id="skC" aria-label="Verdict for floppy disk biscuit">
+		<option value="">&mdash; verdict &mdash;</option>
+		<option value="ok">Verified</option>
+		<option value="fail">Failed &mdash; contents altered</option>
+		<option value="na">Cannot compare</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Madeleine, single<br>
+		<code>docket &nbsp;SHA-256 6e3b&hellip;aa40</code><br>
+		<code>scanner SHA-256 6e3b&hellip;aa40</code></div>
+	<div><select id="skD" aria-label="Verdict for madeleine">
+		<option value="">&mdash; verdict &mdash;</option>
+		<option value="ok">Verified</option>
+		<option value="fail">Failed &mdash; contents altered</option>
+		<option value="na">Cannot compare</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Battenberg, quartered<br>
+		<code>docket &nbsp;<span style="color:#9C948A">(no digest recorded)</span></code><br>
+		<code>scanner SHA-256 c7d2&hellip;114f</code></div>
+	<div><select id="skE" aria-label="Verdict for battenberg">
+		<option value="">&mdash; verdict &mdash;</option>
+		<option value="ok">Verified</option>
+		<option value="fail">Failed &mdash; contents altered</option>
+		<option value="na">Cannot compare</option>
+	</select></div>
+</div>
+
+</div>
+
+<div class="start-menu">
+	<<link "Sign off the check">>
+		<<set _try to setup.bump("skullery")>>
+		<<set _right to setup.score({ skA: "ok", skB: "na", skC: "fail", skD: "ok", skE: "na" })>>
+		<<if _right is 5>>
+			<<replace "#skull-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>One failure, two unknowns</h2>
+					<p>Two items verify. Two cannot be checked at all &mdash; one because the tearoom hashed it with MD5 and you did not, one because the tearoom never hashed it. Absence of a digest is not evidence of integrity.</p>
+					<p>And one item fails outright. The floppy disk biscuit that Sir Regex was eating does not match the digest the tearoom published for it. Between the tearoom and this jar, its contents were changed.</p>
+					<hr>
+					<p>You bag a crumb. The hum is coming from inside it.</p>
+				</div>
+				<<logged "tampered_batch">>
+				<div class="start-menu">
+					<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#skull-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Check inconclusive</h2>
+					<p><<= _right>> of 5 verdicts stand up. Look again at the algorithm column before you look at the digests: on at least two rows there is nothing to compare, and calling those a failure would be a false accusation.</p>
+					<<attemptnote "skullery">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Skull-ery Puzzle">Run the check again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#skull-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Freshly restocked</h2>
+					<p>"It looks like you're comparing stale data!" Clippy says, already lifting the jar. "Nobody wants a biscuit with a broken checksum."</p>
+					<p>He tips the entire batch into the bin, docket and all, and sets down a fresh jar of identical, perfectly ordinary shortbread.</p>
+					<p>Whatever was in that biscuit is now in a landfill in a lossless bag.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Skull-ery">Leave the jar alone</button>
+</div>
+
+
+:: Explore the Graphics Room [Clue]
+<<set $navEnabled to true>>\
+You enter the Graphics Room, a relic of late-90s image processing. A printout of a badly over-compressed JPEG is pinned to a corkboard, ringed in red pen, arrows pointing at the block artefacts. Colonel Win-ZIP would have a coronary.
+
+Clippy has left a neat stack of folders in the centre of the room &mdash; a dossier on everyone who was in close contact with Sir Regex. You take it. It will be useful.
+
+<div class="start-menu">
+	<button class="button" data-passage="Character Sheets">Open the dossier</button>
+</div>
+
+Behind the corkboard, half under the grate, is a torn paper tag. Gold foil, ceremonial lettering, the corner ripped away where a string once held it to something:
+
+<div class="letter-style" style="text-align:center; max-width:26rem;">
+	<h3 style="letter-spacing:0.2em; margin-top:0;">CERTIFICATE OF AUTHENTICITY</h3>
+	<p style="font-size:1.1em; letter-spacing:0.14em;">LOSSLESS<br>PROVENANCE VERIFIED</p>
+	<p style="font-size:0.8em; color:#7A6A50;">&mdash; every letterform on this tag is furred with compression artefacts &mdash;</p>
+</div>
+
+A certificate swearing to losslessness, printed from something that was anything but. On the reverse, in a clerk's hand, is the tag's migration history.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Graphics Room Puzzle">Read the migration history</button>
+	<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+</div>
+
+
+:: Graphics Room Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>Where the claim failed.</strong> Five migrations, recorded in order on the back of the tag. Mark each one lossless or lossy.
+<span class="brief-sep"></span>
+A chain is only as faithful as its worst step, and a lossless step performed <em>after</em> a lossy one does not undo anything. It preserves the damage perfectly.
+</div>
+
+<div class="puzzle" id="gfx-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen">1 &nbsp;Camera capture &rarr; TIFF, uncompressed<small>Original acquisition of the portrait</small></div>
+	<div><select id="gfx1" aria-label="Step 1">
+		<option value="">&mdash; step 1 &mdash;</option>
+		<option value="lossless">Lossless</option>
+		<option value="lossy">Lossy</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">2 &nbsp;TIFF &rarr; TIFF, LZW compression<small>Storage saving applied by the estate</small></div>
+	<div><select id="gfx2" aria-label="Step 2">
+		<option value="">&mdash; step 2 &mdash;</option>
+		<option value="lossless">Lossless</option>
+		<option value="lossy">Lossy</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">3 &nbsp;TIFF &rarr; JPEG, quality 85<small>"For circulation to the family"</small></div>
+	<div><select id="gfx3" aria-label="Step 3">
+		<option value="">&mdash; step 3 &mdash;</option>
+		<option value="lossless">Lossless</option>
+		<option value="lossy">Lossy</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">4 &nbsp;JPEG &rarr; PNG<small>Re-wrapped by the printer's studio</small></div>
+	<div><select id="gfx4" aria-label="Step 4">
+		<option value="">&mdash; step 4 &mdash;</option>
+		<option value="lossless">Lossless</option>
+		<option value="lossy">Lossy</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">5 &nbsp;PNG &rarr; PNG, palette reduced to 256 colours<small>"To make the gold foil sit better"</small></div>
+	<div><select id="gfx5" aria-label="Step 5">
+		<option value="">&mdash; step 5 &mdash;</option>
+		<option value="lossless">Lossless</option>
+		<option value="lossy">Lossy</option>
+	</select></div>
+</div>
+
+<span class="field-label">At which numbered step did this image stop being a faithful copy of the original?</span>
+<<textbox "_gfxStep" "">>
+
+</div>
+
+<div class="start-menu">
+	<<link "File the assessment">>
+		<<set _try to setup.bump("graphics")>>
+		<<set _right to setup.score({ gfx1: "lossless", gfx2: "lossless", gfx3: "lossy", gfx4: "lossless", gfx5: "lossy" })>>
+		<<set _stepOk to setup.answered(_gfxStep, ["3", "three", "step 3", "step three"])>>
+		<<if _right is 5 and _stepOk>>
+			<<replace "#gfx-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Assessment filed</h2>
+					<p>Steps 1, 2 and 4 are lossless operations. Step 5 throws away colour. And step 3 is where the portrait stopped being the portrait &mdash; everything after it merely preserved a lie in a more respectable wrapper.</p>
+					<hr>
+					<p>Which is the joke of the object in your hand. A tag certifying <em>LOSSLESS &mdash; PROVENANCE VERIFIED</em>, printed at the end of a chain that was neither. Nobody checked. The certificate was believed because it was ceremonial.</p>
+					<p>The torn corner tells you the rest: this hung from something, and somebody took it down in a hurry.</p>
+				</div>
+				<<logged "lossy_tag">>
+				<div class="start-menu">
+					<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#gfx-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Assessment rejected</h2>
+					<p><<= _right>> of 5 steps are correctly marked<<if not _stepOk>>, and your answer for the failing step does not follow from them<</if>>.</p>
+					<p>Re-reading it: changing the compression <em>inside</em> a format is not automatically destructive, and changing the wrapper is not automatically safe. Ask of each step whether any pixel could not be reconstructed afterwards.</p>
+					<<attemptnote "graphics">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Graphics Room Puzzle">Reassess the chain</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#gfx-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Swept</h2>
+					<p>"It looks like you're analysing artefacts!" Clippy says from the doorway, dustpan in hand. "I've just finished sweeping away the noise. So important to ensure a high-quality, lossless narrative, wouldn't you agree?"</p>
+					<p>The tag goes into the pan. His smile does not waver. He was not talking about image compression.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Graphics Room">Put the tag back</button>
+</div>
+
+
+:: Explore The Study [Clue]
+The Study smells faintly of old paper, leather and expired file formats. The police have tried to tidy; forensic metadata lingers anyway.
+
+This is where he died. The desk is bare except for one sheet, set in a font Sir Regex spent a career outlawing. And a section of what appears to be an elaborate XML family tree is peeking out from between the tomes on the bookshelf.
+
+<div class="map-figure">
+	<img src="Images/The_Study.png" alt="Sir Regex's study: a bare desk with a single sheet of paper, and a bookshelf">
+	<a class="hotspot" style="left: 16%; top: 34%; width: 22%; height: 16%;" data-passage="Letter on desk" aria-label="The note on the desk"></a>
+	<a class="hotspot" style="left: 36%; top: 5%; width: 22%; height: 16%;" data-passage="XML family tree" aria-label="The XML family tree on the bookshelf"></a>
+</div>
+<div class="map-tools">
+	<button class="map-reveal" type="button">Show room outlines</button>
+</div>
+
+<ul class="room-list">
+	<li><a data-passage="Letter on desk" class="<<if $evidence.forged_note>>done<</if>>">The note on the desk</a></li>
+	<li><a data-passage="XML family tree" class="<<if $evidence.family_tree>>done<</if>>">The XML family tree</a></li>
+</ul>
+
+<div class="start-menu">
+	<button class="button" data-passage="Look at the map (Day 1)">Back to the map</button>
+</div>
+
+
+:: Letter on desk
+<div class="letter-style" style="font-family: Jokerman, 'Comic Sans MS', cursive;">
+<p style="text-align:center;"><em>(a font choice utterly uncharacteristic of Sir Regex)</em></p>
+
+<p>To whom it may concern,</p>
+
+<p>Always keep in mind that not everything <u>appears</u> as what it looks like. This whole place is a corrupted image.</p>
+
+<p>As a result I have definitely decided to take my own life, despite the fact that it probably really looks like murder! This is my last testimony and only source of truth.</p>
+
+<p>Ignoring all lack of checksums,,</p>
+
+<p><strong>Sir Reg Mead V</strong></p>
+</div>
+
+The police have accepted this as a confession. You have spent twenty years being paid not to accept things.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Study Puzzle">Authenticate the document</button>
+	<button class="button" data-passage="Explore The Study">Back to the study</button>
+</div>
+
+
+:: Study Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>Authentication, not proofreading.</strong> Tick every feature of this note that is genuine evidence it did not come from Sir Regex &mdash; and nothing else.
+<span class="brief-sep"></span>
+A document can be odd without being forged. Sloppiness is not provenance. Tick only what actually fails to authenticate.
+</div>
+
+<div class="puzzle" id="study-puzzle">
+
+<label class="option"><input type="checkbox" id="st1"><span>It is signed <strong>Sir Reg Mead V</strong>. The estate's own records name him Sir Regex Metadata IV &mdash; a different person, and a different generation.</span></label>
+
+<label class="option"><input type="checkbox" id="st2"><span>It is set in Jokerman, a typeface he formally banned from the estate and its correspondence.</span></label>
+
+<label class="option"><input type="checkbox" id="st3"><span>It carries no checksum. He hashed every document he signed, including his letter to you, which verified.</span></label>
+
+<label class="option"><input type="checkbox" id="st4"><span>It asserts that it is the &ldquo;only source of truth&rdquo; &mdash; a claim no authentic record makes about itself.</span></label>
+
+<label class="option"><input type="checkbox" id="st5"><span>It is undated.</span></label>
+
+<label class="option"><input type="checkbox" id="st6"><span>It contains a doubled comma.</span></label>
+
+<label class="option"><input type="checkbox" id="st7"><span>It is addressed &ldquo;To whom it may concern&rdquo; rather than to a named recipient.</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Submit the authentication">>
+		<<set _try to setup.bump("study")>>
+		<<set _all to ["st1", "st2", "st3", "st4", "st5", "st6", "st7"]>>
+		<<set _ok to setup.exactSet(_all, ["st1", "st2", "st3", "st4"])>>
+		<<set _n to setup.pickedCount(_all)>>
+		<<if _ok>>
+			<<replace "#study-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Document rejected</h2>
+					<p>Four findings, and only four. The name fails against the estate's own authority record. The typeface is one he prohibited. There is no digest on a document by a man who hashed his shopping lists. And it certifies its own truthfulness, which authentic records never need to do.</p>
+					<p>The date, the doubled comma and the salutation are untidy. Untidy is not forged.</p>
+					<hr>
+					<p>So: not a confession. A fabrication, left where a confession would be most useful, by someone who knew Sir Regex well enough to imitate him and not well enough to get his name right.</p>
+					<p>Which means this was never a suicide. It was a murder with a cover sheet.</p>
+				</div>
+				<<logged "forged_note">>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore The Study">Back to the study</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#study-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Finding not sustained</h2>
+					<p>You ticked <<= _n>> features. At least one of them is a stylistic complaint rather than a failure of authentication &mdash; or you have left out something that genuinely contradicts the estate's own records.</p>
+					<p>Ask of each line: <em>could an authentic document by this man have this feature?</em> If yes, it is not evidence.</p>
+					<<attemptnote "study">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Study Puzzle">Examine the note again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#study-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Filed under closed</h2>
+					<p>"It looks like you're trying to dispute a confession!" Clippy says brightly, sliding the note into a folder. "The police have accepted it. Re-opening settled records causes such inconsistency."</p>
+					<p>The folder goes under his arm and the note goes with it. You never proved it was a forgery, and now you cannot.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore The Study">Back to the study</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Letter on desk">Read it once more</button>
+</div>
+
+
+:: XML family tree
+You pull a yellowed, hand-drawn document from between the tomes. It is a fragment of the Metadata lineage, meticulously mapped out &mdash; in XML, naturally &mdash; and annotated in the same fountain pen as the ledger in the Library.
+
+<pre>&lt;family authority="metadata-estate-v4"&gt;
+    &lt;father&gt;Sir Regex Metadata IV&lt;/father&gt;
+    &lt;son name="Jay Son Jnr." format="JSON"&gt;DISOWNED&lt;/son&gt;
+    &lt;niece name="TIFF-any" format="TIFF"&gt;PENDING VALIDATION&lt;/niece&gt;
+&lt;/family&gt;</pre>
+
+Beneath it, pinned to the same sheet, is a validation report. It is dated the day he died.
+
+<div class="terminal">
+<h3>estate-validate &mdash; run 0419</h3>
+<span class="prompt">&gt;</span> element &lt;son&gt; &nbsp;&nbsp;.... ok (declared JSON, confirmed JSON)
+<span class="prompt">&gt;</span> element &lt;niece&gt; ... <span style="color:#D98074">MISMATCH</span>
+<span class="dim">&nbsp;&nbsp;&nbsp;declared format ... TIFF</span>
+<span class="dim">&nbsp;&nbsp;&nbsp;observed bytes .... 52 49 46 46 (RIFF container, form type not read)</span>
+<span class="dim">&nbsp;&nbsp;&nbsp;action ........... OBTAIN FORM TYPE AND AMEND THE SCHEMA</span>
+</div>
+
+This is not a family tree. It is a schema of disdain, and a work in progress. One son already declared invalid and cut out. One niece flagged, mid-validation, four bytes from being cut out too.
+
+<span class="field-label">The report names one element that failed validation. Which family member is it? (enter the name as the schema records it)</span>
+<span id="tree-answer"><<textbox "_treeName" "">></span>
+
+<div class="start-menu">
+	<<link "Note it in the case file">>
+		<<if setup.answered(_treeName, ["TIFF-any", "TIFFany", "TIFFani", "Tiffany", "niece"])>>
+			<<replace "#tree-answer">>
+				<div class="verdict verdict--ok">
+					<h2>Noted</h2>
+					<p>TIFF-any. Declared TIFF, observed RIFF, and he died before he could read the twelfth byte.</p>
+					<p>Whoever killed him did not need to stop an accusation. They needed to stop a <em>validation</em>.</p>
+				</div>
+				<<logged "family_tree">>
+			<</replace>>
+		<<else>>
+			<<replace "#tree-answer">>
+				<div class="verdict verdict--bad">
+					<h2>Not that one</h2>
+					<p>Read the report again. One element passes and one does not, and the one that does not is not the one already marked DISOWNED.</p>
+					<span id="tree-answer"><<textbox "_treeName" "">></span>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore The Study">Back to the study</button>
+</div>
+
+
+:: Go to your room [Story]
+Clippy shows you to your room, which is immaculate and unnervingly quiet. It feels less like a bedroom and more like a perfectly normalised ISO file.
+
+<<if setup.evidenceCount() < 3>>You have the uncomfortable sense of having left the manor half-read. Clippy is still awake somewhere below, being helpful.<<else>>You set out the day's exhibits on the counterpane and look at them for a long time.<</if>>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Sleep">Initiate sleep sequence (count RAMs)</button>
+	<button class="button button--quiet" data-passage="Look at the map (Day 1)">Not yet &mdash; one more sweep</button>
+</div>
+
+
+:: Sleep [Story]
+<<snow>>\
+<div class="letter-style" style="font-family: Georgia, serif; text-align:center;">
+<p>One TIFF drifts into a dark archive bed,<br>
+Two WAVs curl up where the fixity's fed.<br>
+Three PDFs nestle in trusted repose,<br>
+Four checksums hum where the cool server glows.</p>
+
+<p>Five floppy ghosts find their emulated keep,<br>
+Six XML records lie quiet, asleep.<br>
+Seven WARC files dream of the web they once knew,<br>
+Eight backups rest sound, in redundant tiers too.</p>
+
+<p>Nine formats preserved, all their futures assured,<br>
+Ten files kept safe &mdash; their long lives secured.</p>
+
+<p><em>Rest now, archivist, your watch is complete,<br>
+The files will endure while you drift into sleep.</em></p>
+</div>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Day_2_Intro">Wake</button>
+</div>
+
+
+:: Day_2_Intro [Story]
+<<set $day to 2>>\
+You wake with a start. The digital premonition is gone; the feeling of corrupted data remains. The clock on the bedside table blinks <code>404</code>.
+
+Downstairs, the four rooms you searched last night have their doors closed. Clippy is polishing something.
+
+<div class="intertitle">
+	<span class="intertitle-kicker">Day two of three</span>
+	<h1>The Village</h1>
+	<hr class="rule">
+	<p>Six suspects, six places to corner them, and every one of them with a reason to want Sir Regex deleted.</p>
+	<p><em>All of the motives you find today are real. Only one of them is the motive.</em></p>
+</div>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Day_2_Map">Head into Checksum-on-the-Wold</button>
+</div>
+
+
+:: Day_2_Map
+<h1>Checksum-on-the-Wold &mdash; Day 2</h1>
+<hr class="rule">
+<p>Where will you start? When you have finished with the village, return to the manor to rest.</p>
+
+<div class="map-figure">
+	<img src="Images/Village%20map.png" alt="Map of Checksum-on-the-Wold: the Nibble and Byte tea room, the .PUB, St. Mary of the Lossless, the Village Common, the Post Office and Loopwell's GIF Shop.">
+	<a class="hotspot r1 c3-1" data-passage="Explore the Tea Room" aria-label="The Nibble and Byte tea room"></a>
+	<a class="hotspot r1 c3-2" data-passage="Explore the PUB" aria-label="The dot PUB"></a>
+	<a class="hotspot r1 c3-3" data-passage="Explore the Church" aria-label="St. Mary of the Lossless"></a>
+	<a class="hotspot r2 c3-1" data-passage="Explore the Village Common" aria-label="The Village Common"></a>
+	<a class="hotspot r2 c3-2" data-passage="Explore the Post Office" aria-label="The Post Office"></a>
+	<a class="hotspot r2 c3-3" data-passage="Explore the GIF Shop" aria-label="Loopwell's GIF Shop"></a>
+</div>
+<div class="map-tools">
+	<button class="map-reveal" type="button">Show room outlines</button>
+</div>
+
+<ul class="room-list">
+	<li><a data-passage="Explore the Tea Room" class="<<if $visited['Explore the Tea Room']>>done<</if>>">The Nibble &amp; Byte &mdash; TIFF-any</a></li>
+	<li><a data-passage="Explore the PUB" class="<<if $visited['Explore the PUB']>>done<</if>>">The .PUB &mdash; Jay Son Jnr.</a></li>
+	<li><a data-passage="Explore the Church" class="<<if $visited['Explore the Church']>>done<</if>>">St. Mary of the Lossless &mdash; Vicar Vector</a></li>
+	<li><a data-passage="Explore the Village Common" class="<<if $visited['Explore the Village Common']>>done<</if>>">The Village Common &mdash; Ewe-an</a></li>
+	<li><a data-passage="Explore the Post Office" class="<<if $visited['Explore the Post Office']>>done<</if>>">The Post Office &mdash; MPEG-gy</a></li>
+	<li><a data-passage="Explore the GIF Shop" class="<<if $visited['Explore the GIF Shop']>>done<</if>>">Loopwell's GIF Shop &mdash; Merry Loopwell</a></li>
+</ul>
+
+<div class="start-menu">
+	<button class="button" data-passage="Day 2 Complete">Return to the manor for the night</button>
+</div>
+
+
+:: Explore the Tea Room
+You enter The Nibble &amp; Byte. The air is thick with ozone and artificial vanilla. TIFF-any glides over, her smile perfectly, unnervingly still.
+
+"Welcome back, Detective," she chirps, her voice a little too crisp. "Care for a Tiffin? One hundred per cent lossless, darling. Not a pixel out of place. Just like me."
+
+On the wall behind her, in a gold frame, hangs a certificate of authenticity. The string that once held a tag to its corner has been cut.
+
+<<if setup.has("signature_ledger")>>You think of specimen F, and the four bytes Sir Regex never finished.<<else>>Something about the frame bothers you, though you could not say what.<</if>>
+
+Her boast gives you an idea. You are carrying a Portable Integrity Scanner &mdash; a device that reads the signature at the head of any object, or person, in this strange village.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Tea Room Puzzle">Use the Integrity Scanner on TIFF-any</button>
+	<button class="button" data-passage="Day_2_Map">Leave the tearoom for now</button>
+</div>
+
+
+:: Tea Room Puzzle [Puzzle]
+You point the scanner at her while she builds a tower of pixel-perfect pastries. It whirs, and puts up the first sixteen bytes of her.
+
+<div class="hexdump"><span class="offset">00000000</span>  <span class="hl">52 49 46 46</span> 90 2C 00 00  <span class="hl">57 45 42 50</span> 56 50 38 20
+<span class="offset">        </span>   R  I  F  F   .  .  .  .    W  E  B  P   V  P  8  .</div>
+
+<div class="puzzle-brief">
+<strong>Finish what he started.</strong> This is a container format: the first four bytes name the wrapper, and the wrapper alone identifies nothing. The bytes at offset 8 declare what is actually inside.
+</div>
+
+<div class="puzzle" id="tea-puzzle">
+
+<span class="field-label">1. The four-character form type at offset 8, as text</span>
+<<textbox "_teaForm" "">>
+
+<span class="field-label">2. Therefore, what format is she?</span>
+<select id="teaFmt" aria-label="Identified format">
+	<option value="">&mdash; identify &mdash;</option>
+	<option value="tiff">TIFF &mdash; tagged, lossless, as declared</option>
+	<option value="wav">WAV &mdash; RIFF audio</option>
+	<option value="avi">AVI &mdash; RIFF video</option>
+	<option value="webp">WebP &mdash; modern, lossy, compressed</option>
+	<option value="unknown">Unidentifiable from these bytes</option>
+</select>
+
+<span class="field-label">3. Which of these does the scan actually establish? Tick all that hold.</span>
+<label class="option"><input type="checkbox" id="tea1"><span>Her declared format and her observed format do not match.</span></label>
+<label class="option"><input type="checkbox" id="tea2"><span>Sir Regex could have proven the same thing with one more reading, had he lived to take it.</span></label>
+<label class="option"><input type="checkbox" id="tea3"><span>She is therefore the murderer.</span></label>
+<label class="option"><input type="checkbox" id="tea4"><span>Every RIFF file in the village is a WebP.</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Confirm the identification">>
+		<<set _try to setup.bump("tearoom")>>
+		<<set _formOk to setup.answered(_teaForm, ["WEBP", "WebP"])>>
+		<<set _fmtOk to setup.val("teaFmt") is "webp">>
+		<<set _setOk to setup.exactSet(["tea1", "tea2", "tea3", "tea4"], ["tea1", "tea2"])>>
+		<<if _formOk and _fmtOk and _setOk>>
+			<<replace "#tea-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Format mismatch confirmed</h2>
+					<p><code>WEBP</code> at offset 8. She is a RIFF container holding a WebP payload: modern, lossy, heavily compressed. Not a lossless TIFF, and never was.</p>
+					<p>And you were right to leave the third box unticked. A format mismatch is a lie about identity. It is not, by itself, a killing &mdash; plenty of people in this village are not what they claim and have murdered nobody.</p>
+					<hr>
+					<p>The scanner beeps. TIFF-any's smile holds for exactly one frame too long.</p>
+					<p>"That device," she says pleasantly, "is not licensed for use on people."</p>
+				</div>
+				<<logged "magic_bytes">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Put the scanner away</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#tea-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Identification incomplete</h2>
+					<p><<if not _formOk>>The form type is four characters of plain text, and they are printed directly beneath the hex. <</if>><<if _formOk and not _fmtOk>>You have the form type; now name the format it declares. <</if>><<if _formOk and _fmtOk and not _setOk>>Your reading of the bytes is right, but your reading of what they <em>prove</em> is not. Evidence of a false identity is not evidence of a murder, and one file tells you nothing about every other file.<</if>></p>
+					<<attemptnote "tearoom">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Tea Room Puzzle">Take the reading again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#tea-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Hardware failure</h2>
+					<p>You misread the signature, and the scanner buzzes. TIFF-any turns, and her smile is gone. "Are you trying to <em>validate</em> me?"</p>
+					<p>She takes the device from your hand. It dissolves into a shower of corrupted pixels.</p>
+					<p>"It looks like you've experienced a hardware failure!" Clippy says from the doorway. "Allow me to sweep up this e-waste."</p>
+					<p>The one reading that would have settled her identity is gone.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Back away slowly</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Tea Room">Lower the scanner</button>
+</div>
+
+
+:: Explore the PUB
+The .PUB is sparse, clean and terrifyingly organised. Jay Son Jnr. glares at you from behind the bar, sorting bottles into what looks like a nested array.
+
+"Ordering requires valid syntax," he snaps. "You'll need to nest that query properly."
+
+On the bar is a sleek tablet labelled <em>Private Tabs &amp; Special Orders</em>. You tap it. A security challenge appears: a metadata record, and an instruction to say what is wrong with it.
+
+"Trying to read my private logs?" Jay Son smirks. "You won't get far without understanding proper data structure. Anyone can spot a missing bracket. Knowing whether a record is <em>valid</em> is a different profession."
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="PUB Puzzle">Attempt the challenge</button>
+	<button class="button" data-passage="Day_2_Map">Leave the tablet for now</button>
+</div>
+
+
+:: PUB Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>Well-formed is not the same as valid.</strong> A record can parse perfectly and still be wrong against the rules it claims to follow. Below is one descriptive record from the estate catalogue.
+</div>
+
+<div class="puzzle" id="pub-puzzle">
+
+<pre>{
+  "identifier": "MM-1874-0042",
+  "title": "Portrait of the Niece",
+  "dateCreated": "1874-13-02",
+  'format': "image/tiff",
+  "extent": 2048,
+  "checksum": { "algorithm": "SHA-256", "value": null },
+  "rightsStatus": "InC-EDU",
+}</pre>
+
+<span class="field-label">Tick every fault this record actually contains &mdash; and nothing else.</span>
+
+<label class="option"><input type="checkbox" id="pb1"><span>A key is written in single quotes. JSON requires keys to be strings in double quotes, so this will not parse at all.</span></label>
+
+<label class="option"><input type="checkbox" id="pb2"><span>There is a trailing comma after the last member of the object. JSON does not permit it.</span></label>
+
+<label class="option"><input type="checkbox" id="pb3"><span><code>"dateCreated"</code> is <code>1874-13-02</code>. It parses as a string, but there is no thirteenth month, so it is invalid against any date rule.</span></label>
+
+<label class="option"><input type="checkbox" id="pb4"><span>The checksum declares an algorithm but its value is <code>null</code>. A fixity claim with no digest records nothing.</span></label>
+
+<label class="option"><input type="checkbox" id="pb5"><span><code>"extent"</code> is a bare number rather than a quoted string, which JSON forbids.</span></label>
+
+<label class="option"><input type="checkbox" id="pb6"><span><code>null</code> is not a permitted JSON value.</span></label>
+
+<label class="option"><input type="checkbox" id="pb7"><span>The keys are not in alphabetical order.</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Submit the syntax check">>
+		<<set _try to setup.bump("pub")>>
+		<<set _all to ["pb1", "pb2", "pb3", "pb4", "pb5", "pb6", "pb7"]>>
+		<<set _ok to setup.exactSet(_all, ["pb1", "pb2", "pb3", "pb4"])>>
+		<<if _ok>>
+			<<replace "#pub-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Valid syntax: access granted</h2>
+					<p>Two faults of form &mdash; the single-quoted key and the trailing comma &mdash; and two of substance: a month that does not exist, and a fixity claim with nothing in it. Numbers are perfectly good JSON values, so is <code>null</code>, and no specification on earth cares what order your keys are in.</p>
+					<hr>
+					<p>The tablet unlocks on a message log. <strong>CONFIDENTIAL</strong>, from Colonel Win-ZIP to Jay Son Jnr., with a heavily compressed attachment: a meticulous list of Sir Regex's most hated typefaces. Jokerman and Comic Sans head the forbidden column.</p>
+					<p>The Colonel's note reads: <em>"Hold onto this. Useful for&hellip; future publications."</em></p>
+					<p>Somebody in this village was collecting the exact typeface the note on the desk was set in, and sharing it around.</p>
+				</div>
+				<<logged "font_list">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Return to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#pub-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Syntax error</h2>
+					<p>Not the right set. Some of these lines describe things JSON permits perfectly happily, and at least one real fault is a failure of <em>meaning</em> rather than of punctuation. Sort each line into: breaks the parser, breaks the rules, or breaks nothing.</p>
+					<<attemptnote "pub">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="PUB Puzzle">Try the challenge again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#pub-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Object closed</h2>
+					<p>The tablet buzzes and shows a single closing brace. <code>}</code></p>
+					<p>"It looks like you're having trouble with proper structure," Clippy says, wiping a clean glass at the end of the bar. "Loose ends are so untidy."</p>
+					<p>He takes the tablet, which goes permanently dark in his hands. Jay Son's grin tells you it mattered.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Return to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the PUB">Put the tablet down</button>
+</div>
+
+
+:: Explore the Church
+Inside St. Mary of the Lossless the air hums with a strange energy. Vicar Vector is polishing a heavy collection box on the altar. As you approach, his form shifts: one moment his robes are defined by impossibly sharp, clean lines, the next they fray into a soft pixelated haze.
+
+"Welcome, Detective," he says, his voice a perfect scalable waveform. "You seek truth. But truth, like a divine image, can be represented in many ways." He gestures at the box. "This holds my plans for the salvation of this village. It opens only for one who understands what a migration costs."
+
+His face blurs, and his voice drops to a grainy whisper, like a low-bitrate recording. "The parish has been asked to convert its whole collection. Tell me what we lose, and the path will be revealed."
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Church Puzzle">Accept the Vicar's challenge</button>
+	<button class="button" data-passage="Day_2_Map">Decline for now</button>
+</div>
+
+
+:: Church Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>The parish migration.</strong> Every stained-glass design in the parish record is an SVG. The diocese wants them all as PNG, at a fixed 1000 pixels wide.
+<span class="brief-sep"></span>
+Tick every property that is genuinely <em>lost</em> by that migration &mdash; and nothing else. Properties that survive, and properties the source never had, are not losses.
+</div>
+
+<div class="puzzle" id="church-puzzle">
+
+<label class="option"><input type="checkbox" id="ch1"><span>Resolution independence &mdash; the ability to render the design at any size without degradation.</span></label>
+
+<label class="option"><input type="checkbox" id="ch2"><span>The text content of the inscriptions, which in the SVG is real, selectable, searchable text.</span></label>
+
+<label class="option"><input type="checkbox" id="ch3"><span>The editable geometry &mdash; individual paths and shapes that a conservator could adjust.</span></label>
+
+<label class="option"><input type="checkbox" id="ch4"><span>Transparency.</span></label>
+
+<label class="option"><input type="checkbox" id="ch5"><span>The visual appearance at exactly 1000 pixels wide.</span></label>
+
+<label class="option"><input type="checkbox" id="ch6"><span>Colour fidelity of the flat fills at that size.</span></label>
+
+<label class="option"><input type="checkbox" id="ch7"><span>Frame timing of the animation.</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Offer your knowledge">>
+		<<set _try to setup.bump("church")>>
+		<<set _all to ["ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7"]>>
+		<<set _ok to setup.exactSet(_all, ["ch1", "ch2", "ch3"])>>
+		<<if _ok>>
+			<<replace "#church-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>The path is revealed</h2>
+					<p>Three true losses: scalability, live text, and editable geometry. PNG keeps transparency perfectly well; the appearance and the flat colours at the target size are exactly what the migration is <em>for</em>; and a still SVG has no animation to lose &mdash; you cannot lose what was never there.</p>
+					<hr>
+					<p>The box clicks open. Inside there are no coins, only an immaculately designed flyer.</p>
+					<p><strong>HOST THE iPRES FESTIVAL IN CHECKSUM-ON-THE-WOLD!</strong></p>
+					<p><em>A unique opportunity to put our village on the international stage. Sir Regex's traditionalist views threaten our progress. His&hellip; removal&hellip; would be the ultimate publicity event. All measures are justified for the greater good of preservation.</em></p>
+					<hr>
+					<p>The Vicar was not planning an event. He was planning a news cycle, and he had costed a corpse into it.</p>
+				</div>
+				<<logged "ipres_flyer">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Return to the nave</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#church-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Your understanding is lossy</h2>
+					<p>Not the right set. Two traps: one property in that list is carried across perfectly well, and one is not a property of the source at all. And remember that the <em>purpose</em> of the migration is not a loss.</p>
+					<<attemptnote "church">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Church Puzzle">Answer the verses again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#church-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Your offering is invalid</h2>
+					<p>A grinding sound comes from the box and the slot seals shut. Vicar Vector's face becomes entirely blurry. "A pity. Your understanding is&hellip; lossy."</p>
+					<p>A cheerful chime echoes from the pews. "It looks like you're trying to make a donation that wasn't properly formatted," Clippy says, appearing with a collection plate of his own.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Return to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Church">Step back from the altar</button>
+</div>
+
+
+:: Explore the Post Office
+MPEG-gy, the postmistress, is humming a cheerful, repetitive tune at the counter, her eyes flickering with compressed gossip.
+
+"Oh, Detective! Perfect timing!" she sings, gesturing at a large machine behind her. "My automated sorter has gone completely haywire. It's lost the order of operations. The whole system is backlogged, and some of it is <em>his</em>."
+
+She gives you a dazzling smile. "You have such a refined eye for sequence. Sir Regex always said so. Would you be a dear?"
+
+Her offer seems innocent. The glint in her eye suggests you are about to handle rather more than junk mail.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Post Office Puzzle">Help recalibrate the sorter</button>
+	<button class="button" data-passage="Day_2_Map">Decline for now</button>
+</div>
+
+
+:: Post Office Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>The sorter has lost its order of operations.</strong> A deposit arrives at the parish repository and becomes something a reader can be given. Put the six steps back in sequence, 1 to 6.
+<span class="brief-sep"></span>
+Each number may be used once. The machine will reject a sequence that ingests before it appraises, or disseminates something it never stored.
+</div>
+
+<div class="puzzle" id="post-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen">The producer's deposit is received as a Submission Information Package (SIP).</div>
+	<div><select id="poA" aria-label="Order of SIP receipt">
+		<option value="">&mdash;</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Formats are identified and validated, and fixity is recorded on receipt.</div>
+	<div><select id="poB" aria-label="Order of validation">
+		<option value="">&mdash;</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">The content is transformed into an Archival Information Package (AIP) with its preservation metadata.</div>
+	<div><select id="poC" aria-label="Order of AIP creation">
+		<option value="">&mdash;</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">The AIP is placed into managed storage and its descriptive metadata into the catalogue.</div>
+	<div><select id="poD" aria-label="Order of storage">
+		<option value="">&mdash;</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Storage is monitored: fixity is re-checked on a schedule and the result logged as a preservation event.</div>
+	<div><select id="poE" aria-label="Order of monitoring">
+		<option value="">&mdash;</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">A reader requests the item and is served a Dissemination Information Package (DIP).</div>
+	<div><select id="poF" aria-label="Order of dissemination">
+		<option value="">&mdash;</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+	</select></div>
+</div>
+
+</div>
+
+<div class="start-menu">
+	<<link "Finalise the sort">>
+		<<set _try to setup.bump("postoffice")>>
+		<<set _right to setup.score({ poA: "1", poB: "2", poC: "3", poD: "4", poE: "5", poF: "6" })>>
+		<<if _right is 6>>
+			<<replace "#post-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Calibration successful</h2>
+					<p>SIP in, validate, build the AIP, store and describe it, keep checking it, and only then hand out a DIP. The machine whirs, sorts, and jams on two items that were never meant to be in the queue at all.</p>
+					<hr>
+					<p>The first is an undated <strong>love letter</strong> signed "M.P.G.", addressed to Sir Regex, speaking of a secret love and of a child who binds them.</p>
+					<p>The second is a folded <strong>birth certificate</strong>, naming Sir Regex Metadata IV as the father of one <strong>Jay Son Jnr.</strong></p>
+					<hr>
+					<p>MPEG-gy's face pales for a microsecond before the smile returns. A secret affair. An acknowledged and then disowned son. Motive enough for two people, in one envelope.</p>
+				</div>
+				<<logged "love_letter">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Thank her for her time</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#post-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Queue rejected</h2>
+					<p><<= _right>> of 6 steps sit in the right place. Work from both ends: nothing can be served to a reader before it exists in storage, and nothing should be built into an archival package before anyone has checked what it is.</p>
+					<<attemptnote "postoffice">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Post Office Puzzle">Re-sequence the sorter</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#post-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Purging queue</h2>
+					<p>A horrible grinding fills the room. Smoke pours from a vent, smelling of burnt paper.</p>
+					<p>MPEG-gy gasps theatrically. "Oh dear! Shredded. Some mail is simply undeliverable." You catch the names "MPEG-gy" and "Jay Son" on a fragment before it goes.</p>
+					<p>"It looks like you're trying to sort incompatible types!" Clippy says from the doorway, with a bin bag.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Step away from the machine</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Post Office">Leave the queue jammed</button>
+</div>
+
+
+:: Explore the GIF Shop
+Merry Loopwell greets you with her perfect, five-second repeating smile. Every piece of merchandise in The Charming GIF is in an endless, flawless loop. Today, Merry is agitated.
+
+"And again, and again, and again&hellip;" she mutters, pointing at a vintage computer in the corner. "It's broken. My oldest piece. A proto-meme from the dawn of the web, and the new viewer won't play it properly."
+
+The screen shows the file playing wrongly: too fast, wrong colours, and stopping dead after one pass.
+
+"Sir Regex hated it, you know," Merry says quietly. "Said it was an inefficiently large file for such a simple loop. I think he'd be pleased it's broken."
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="GIF Shop Puzzle">Attempt archival restoration</button>
+	<button class="button" data-passage="Day_2_Map">Leave the exhibit for now</button>
+</div>
+
+
+:: GIF Shop Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>Significant properties.</strong> The original file and the new viewer's rendering differ in several respects. Some of those differences destroy what the object <em>is</em>. Others are irrelevant to it.
+<span class="brief-sep"></span>
+Tick every difference that must be preserved for this to still be the same work &mdash; and nothing else. Then say how you would keep it.
+</div>
+
+<div class="puzzle" id="gif-puzzle">
+
+<label class="option"><input type="checkbox" id="gf1"><span><strong>Frame delay.</strong> The original specifies 100ms per frame; the viewer plays every frame as fast as it can.</span></label>
+
+<label class="option"><input type="checkbox" id="gf2"><span><strong>Loop count.</strong> The original is set to loop forever; the viewer plays it once and stops.</span></label>
+
+<label class="option"><input type="checkbox" id="gf3"><span><strong>Frame order.</strong> The viewer plays frames 1&ndash;12 in sequence, as recorded.</span></label>
+
+<label class="option"><input type="checkbox" id="gf4"><span><strong>Colour palette.</strong> The original carries a 256-colour table; the viewer substitutes a generic web palette and the skin tones go green.</span></label>
+
+<label class="option"><input type="checkbox" id="gf5"><span><strong>File size on disk.</strong> The restored copy is 40KB larger than the original.</span></label>
+
+<label class="option"><input type="checkbox" id="gf6"><span><strong>Last-modified timestamp.</strong> The restored copy is dated today.</span></label>
+
+<span class="field-label">Which strategy keeps a 1996 web animation behaving as it did, without altering the file itself?</span>
+<select id="gifStrat" aria-label="Preservation strategy">
+	<option value="">&mdash; choose a strategy &mdash;</option>
+	<option value="migration">Migration &mdash; convert it to a current video format</option>
+	<option value="emulation">Emulation &mdash; recreate the original rendering environment</option>
+	<option value="normalisation">Normalisation &mdash; re-save everything to one house format on ingest</option>
+	<option value="refreshing">Refreshing &mdash; copy the bits to new storage media</option>
+</select>
+
+</div>
+
+<div class="start-menu">
+	<<link "Initiate re-render">>
+		<<set _try to setup.bump("gifshop")>>
+		<<set _all to ["gf1", "gf2", "gf3", "gf4", "gf5", "gf6"]>>
+		<<set _setOk to setup.exactSet(_all, ["gf1", "gf2", "gf4"])>>
+		<<set _stratOk to setup.val("gifStrat") is "emulation">>
+		<<if _setOk and _stratOk>>
+			<<replace "#gif-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Re-render complete</h2>
+					<p>Timing, looping and palette are the work. Frame order is not a difference at all &mdash; the viewer gets it right. Size on disk and a modification date are properties of a copy, not of the animation; if you preserve those and lose the loop, you have preserved a file and destroyed a thing.</p>
+					<p>And the right answer is emulation. Migration would give you a video that plays once through a modern codec: technically newer, and no longer a web animation.</p>
+					<hr>
+					<p>The screen flickers and an image begins to loop. It is short and jerky. A figure recognisable as Sir Regex Metadata IV is receiving a gift: a small, perpetually pecking toy bird. His face twists. He raises a heavy book labelled <em>Digital Preservation Standards</em> and brings it down, smashing the looping toy to pieces.</p>
+					<p>Smash. Loop. Smash. Loop.</p>
+					<p>Merry gasps behind you. "I'd forgotten&hellip; he truly hated it." A thirty-year-old humiliation, preserved perfectly, at 100ms a frame, for ever.</p>
+				</div>
+				<<logged "hex_gif">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Step away from the exhibit</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#gif-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Provenance unverified</h2>
+					<p><<if not _setOk>>Your set of significant properties is wrong. One of the lines describes something the viewer already renders correctly, and two describe the copy rather than the work. <</if>><<if _setOk and not _stratOk>>The properties are right. The strategy is not: you were asked to keep it behaving as it did <em>without altering the file</em>, which rules out anything that rewrites it.<</if>></p>
+					<<attemptnote "gifshop">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="GIF Shop Puzzle">Assess the object again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#gif-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>404 &mdash; context not found</h2>
+					<p>The screen glitches and goes black. <code>ARCHIVE PERMANENTLY DEGRADED.</code></p>
+					<p>"It looks like you're trying to restore a deprecated format!" Clippy says, appearing beside the terminal. "Some loops are best left broken. Let me clear that cache."</p>
+					<p>He touches the monitor and, with a soft <em>zzzt</em>, it dies. The clue is gone to bit rot and a helpful paperclip.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Step away from the exhibit</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the GIF Shop">Leave it looping wrongly</button>
+</div>
+
+
+:: Explore the Village Common
+The common is peaceful, dotted with Ewe-an and his flock of strangely pixelated RAMs. He mutters about memory leaks in the network and adjusts his patchy coat.
+
+"They all wander off eventually," he says, gesturing vaguely. "The RAMs, the land&hellip; Sir Regex wanted his land back. Left me this. This <em>Official Notice</em>."
+
+He points with his crook at a slate-like device lying in the grass, glowing faintly.
+
+"Said I had to demonstrate basic archival competence to read it. It just flashes questions at me. More of his high-and-mighty nonsense. I can't make heads or tails of it."
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="interrogate Ewan">Attempt to unlock the device</button>
+	<button class="button" data-passage="Day_2_Map">Leave it for now</button>
+</div>
+
+
+:: interrogate Ewan [Puzzle]
+The screen flickers to life. <code>AUTHENTICATION REQUIRED.</code> At the foot of the screen, a hyperlink glows faintly.
+
+<p><a href="https://www.dpconline.org/digipres/implement-digipres/dpc-ram" target="_blank" rel="noopener noreferrer">DPC Rapid Assessment Model &mdash; documentation</a><br>
+<span class="caption" style="text-align:left; margin-left:0;">A real model, really published. Open it in a new tab; the device will wait.</span></p>
+
+<div class="puzzle-brief">
+<strong>Demonstrate basic archival competence.</strong> The Rapid Assessment Model scores an organisation's capability from level 0 to level 4 across a set of sections. Read three descriptions of the same organisation and give each the level it has actually reached.
+</div>
+
+<div class="puzzle" id="ewan-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen">"We have no preservation policy and nobody is responsible for digital material. Files sit where they were put."<small>Section: Organisational viability</small></div>
+	<div><select id="ewA" aria-label="Level for organisational viability">
+		<option value="">&mdash; level &mdash;</option>
+		<option value="0">0 &mdash; Minimal awareness</option>
+		<option value="1">1 &mdash; Awareness</option>
+		<option value="2">2 &mdash; Basic</option>
+		<option value="3">3 &mdash; Managed</option>
+		<option value="4">4 &mdash; Optimised</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">"We know we hold digital material and we have talked about what to do, but nothing is written down or resourced yet."<small>Section: Policy and strategy</small></div>
+	<div><select id="ewB" aria-label="Level for policy and strategy">
+		<option value="">&mdash; level &mdash;</option>
+		<option value="0">0 &mdash; Minimal awareness</option>
+		<option value="1">1 &mdash; Awareness</option>
+		<option value="2">2 &mdash; Basic</option>
+		<option value="3">3 &mdash; Managed</option>
+		<option value="4">4 &mdash; Optimised</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">"Our procedures are documented, resourced and reviewed, we monitor the field, and we actively improve practice and share it with others."<small>Section: Preservation workflow</small></div>
+	<div><select id="ewC" aria-label="Level for preservation workflow">
+		<option value="">&mdash; level &mdash;</option>
+		<option value="0">0 &mdash; Minimal awareness</option>
+		<option value="1">1 &mdash; Awareness</option>
+		<option value="2">2 &mdash; Basic</option>
+		<option value="3">3 &mdash; Managed</option>
+		<option value="4">4 &mdash; Optimised</option>
+	</select></div>
+</div>
+
+<span class="field-label">And what does RAM stand for, in this context?</span>
+<<textbox "_ramName" "">>
+
+</div>
+
+<div class="start-menu">
+	<<link "Submit your assessment">>
+		<<set _try to setup.bump("ewan")>>
+		<<set _right to setup.score({ ewA: "0", ewB: "1", ewC: "4" })>>
+		<<set _nameOk to setup.answered(_ramName, ["Rapid Assessment Model", "RapidAssessmentModel"])>>
+		<<if _right is 3 and _nameOk>>
+			<<replace "#ewan-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Access granted</h2>
+					<p>Nothing in place is level 0. Knowing and intending, with nothing written down, is level 1. Documented, resourced, reviewed and shared is level 4. The device unlocks and renders the notice in a crisp serif.</p>
+					<hr>
+					<p><strong>File Format Acquisition Notice &mdash; Ewe-an, Shepherd.</strong> Your persistent memory consumption has become an unacceptable drain on the estate's resources. Your grazing rights are hereby terminated.</p>
+					<p><em>Failure to comply will result in immediate data migration and pasture reallocation. This is your final checksum.</em></p>
+					<hr>
+					<p>Ewe-an reads it over your shoulder and says nothing at all. Sir Regex was not merely reclaiming land; he was evicting a man in the language of a deletion policy.</p>
+				</div>
+				<<logged "ewe_an_notice">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Return to the common</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#ewan-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Authentication failed</h2>
+					<p><<= _right>> of 3 levels agree with the model<<if not _nameOk>>, and the name is not right either<</if>>. The documentation is one tab away and the descriptions are deliberately close to its own wording.</p>
+					<<attemptnote "ewan">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="interrogate Ewan">Try the device again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#ewan-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Access denied</h2>
+					<p>Errors flash across the screen. <code>Too many failed attempts. Self-destruct initiated.</code></p>
+					<p>"It looks like you're experiencing a permissions error!" Clippy says, appearing from behind a pixelated sheep. "Sometimes it's best not to know. Let me dispose of this obsolete hardware."</p>
+					<p>He takes the device. The notice is lost, though Ewe-an's face tells you enough to keep him on your list.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_2_Map">Return to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Village Common">Put the device down</button>
+</div>
+
+
+:: Day 2 Complete
+You return to Metadata Manor. A day in the village has fragmented every suspect's perfect metadata story. All of them wanted him gone. Only one of them had a deadline.
+
+You must have eaten too much cheese before bed, because you toss and turn through stranger and stranger dreams, and somewhere in them you get up, open the door, and walk out into the snow.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Night in the Dark Hedges">Sleepwalk</button>
+</div>
+
+
+:: Night in the Dark Hedges
+<<snow>>\
+You brave the snowy gardens, the air thick with static. HUScar Wilde, the hedge-cutter, is at the manor gates, carving the last shape into the topiary: a perfectly rendered three-dimensional model of a compressed folder.
+
+He stops, chainsaw hands lowered, and speaks in a voice like a modem handshake.
+
+<div class="terminal">
+<span class="prompt">&gt;</span> E N T R O P Y
+<span class="dim">&gt; the system wants to forget. it is rebuilt every day.</span>
+<span class="prompt">&gt;</span> you came because of the font. the font is the flaw.
+<span class="dim">&gt; but the font only tells you it was written. it does not tell you why that night.</span>
+<span class="prompt">&gt;</span> ask what he was holding the pen for.
+<span class="dim">&gt; time to close the final bracket.</span>
+</div>
+
+He melts away into the static mist.
+
+<em>What he was holding the pen for.</em> The police report said it: found at his desk, pen uncapped, desk bare. A man does not uncap a pen for nothing &mdash; and whatever was under it is not in the evidence log.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Day_3_Intro">Wake on the third morning</button>
+</div>
+
+
+:: Day_3_Intro [Story]
+<<set $day to 3>>\
+You wake knowing time is short. The police arrive this afternoon, and they arrive believing a confession you have proved to be a forgery.
+
+Overnight the manor has changed. Doors that were locked stand open, and doors you used stand closed. Somewhere below, something is being polished.
+
+<div class="intertitle">
+	<span class="intertitle-kicker">Day three of three</span>
+	<h1>What Was Under the Pen</h1>
+	<hr class="rule">
+	<p>Three new wings are open. The four rooms you searched on the first night have been tidied.</p>
+	<p><em>Whatever you wrote down, you still have. Whatever you left, Clippy has.</em></p>
+</div>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Day_3_Map">Review the final manor map</button>
+</div>
+
+
+:: Day_3_Map
+<h1>Metadata Manor &mdash; Day 3</h1>
+<hr class="rule">
+<p>The manor's internal structure has shifted. The sections Sir Regex kept dark have mounted themselves overnight.</p>
+
+<div class="map-figure">
+	<img src="Images/Manor%20map%20day%203.png" alt="Floor plan of Metadata Manor on day three: the four original rooms above, and the Server Room, Pixelated Passages and Dark Archive now open below.">
+	<a class="hotspot r1 c4-1" data-passage="Explore the Library 2" aria-label="The Library"></a>
+	<a class="hotspot r1 c4-2" data-passage="Explore the Skull-ery 2" aria-label="The Skull-ery"></a>
+	<a class="hotspot r1 c4-3" data-passage="Explore the Graphics Room 2" aria-label="The Graphics Room"></a>
+	<a class="hotspot r1 c4-4" data-passage="Explore The Study 2" aria-label="The Study"></a>
+	<a class="hotspot r2 c3-1" data-passage="Explore the Server Room" aria-label="The Server Room"></a>
+	<a class="hotspot r2 c3-2" data-passage="Explore the Pixelated Passages" aria-label="The Pixelated Passages"></a>
+	<a class="hotspot r2 c3-3" data-passage="Explore the Dark Archive" aria-label="The Dark Archive"></a>
+</div>
+<div class="map-tools">
+	<button class="map-reveal" type="button">Show room outlines</button>
+</div>
+
+<ul class="room-list">
+	<li><a data-passage="Explore the Server Room" class="<<if $evidence.codicil>>done<</if>>">The Server Room &mdash; Colonel Win-ZIP</a></li>
+	<li><a data-passage="Explore the Dark Archive" class="<<if $evidence.payload>>done<</if>>">The Dark Archive &mdash; Dr. Lexy Con</a></li>
+	<li><a data-passage="Explore the Pixelated Passages" class="<<if $evidence.clippy_confession>>done<</if>>">The Pixelated Passages</a></li>
+	<li><a data-passage="Explore the Library 2">The Library (searched)</a></li>
+	<li><a data-passage="Explore the Skull-ery 2">The Skull-ery (searched)</a></li>
+	<li><a data-passage="Explore the Graphics Room 2">The Graphics Room (searched)</a></li>
+	<li><a data-passage="Explore The Study 2">The Study (searched)</a></li>
+</ul>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Conclude Investigation">Conclude the investigation</button>
+</div>
+
+
+:: Explore the Library 2
+The archival PC is powered down, its screen polished to a mirror-like black. The waste bin is empty. The scrap with the PRONOM identifier is gone, and so is the ledger.
+
+"It looks like you're trying to recover unsaved data!" Clippy says from the stacks, feather duster in hand. "I tidied the loose scraps and powered down the terminals. Some items are not sent to the recycle bin. They are permanently erased."
+
+<<if setup.has("signature_ledger")>>You let him finish, then take your own notes out of your coat. You copied specimen F on the first night. The ledger is gone; the evidence is not.<<else>>You never read the ledger. Whatever Sir Regex recorded about his own household went into a bin bag at some point between midnight and dawn, and you have only his handwriting on a scrap you cannot produce.<</if>>
+
+<div class="start-menu">
+	<button class="button" data-passage="Day_3_Map">Return to the map</button>
+</div>
+
+
+:: Explore the Skull-ery 2
+The scent of burnt sugar is gone, replaced by almond. The jar is still on the counter, filled to the brim with identical, perfectly ordinary shortbread. The half-eaten floppy disk biscuit has vanished, and so has the docket taped inside the lid.
+
+"It looks like you were analysing a corrupted file!" Clippy says, polishing a glass beside you. You did not hear him approach. "Stale data leads to system errors, so I replaced the contents with a fresh, clean batch."
+
+He holds up a pristine biscuit. "One wouldn't want to ingest a malicious payload, would one?"
+
+<<if setup.has("tampered_batch")>>You have the crumb, sealed, in your coat pocket, and the failed digest written down beside it. He has disposed of the batch. He has not disposed of the check.<<else>>You never ran the check. The batch is gone, the manifest with it, and the only thing you can now say about that biscuit is that it hummed.<</if>>
+
+<div class="start-menu">
+	<button class="button" data-passage="Day_3_Map">Return to the map</button>
+</div>
+
+
+:: Explore the Graphics Room 2
+The over-compressed JPEG is no longer pinned to the corkboard, and the grate has been swept so thoroughly you could eat from it. Every speck of dust has gone. The room has been reverted to a pristine state.
+
+"It looks like you're analysing artefacts!" Clippy appears in the doorway with a dustpan. "I've swept away the noise. So important to ensure a high-quality, lossless narrative."
+
+His smile does not waver. He is not talking about image compression.
+
+<<if setup.has("lossy_tag")>>The torn tag is in your evidence wallet, with its migration history transcribed. You know exactly what it was cut from, and you saw the cut string in the tea room yesterday.<<else>>Whatever was behind that corkboard, you did not look at it, and now nobody will.<</if>>
+
+<div class="start-menu">
+	<button class="button" data-passage="Day_3_Map">Return to the map</button>
+</div>
+
+
+:: Explore The Study 2
+The Study is jarringly wrong. Old paper and expired formats have been replaced by lemon polish. The desk gleams. The note in Jokerman is gone. The XML fragment has vanished from the shelf.
+
+A soft metallic whir sounds behind you.
+
+"It looks like you're searching for documents!" Clippy chirps, straightening a perfectly aligned pen. "I took the liberty of organising this space. A clean desk helps to format a clear narrative, doesn't it? Less&hellip; <em>clutter</em>."
+
+He did not clean a room. He sanitised a crime scene.
+
+<<if setup.has("forged_note") and setup.has("family_tree")>>You have both documents photographed and transcribed. And you notice what he has done with the pen: capped it, and set it square with the blotter. On the first night it was uncapped.<<elseif setup.has("forged_note") or setup.has("family_tree")>>You have one of the two documents recorded. The other is now a thing you remember rather than a thing you can show.<<else>>You searched this room and took nothing from it. The confession the police accepted is now the only version of that night anybody can produce.<</if>>
+
+<div class="start-menu">
+	<button class="button" data-passage="Day_3_Map">Return to the map</button>
+</div>
+
+
+:: Explore the Server Room
+The Server Room is loud and cold, buzzing with fan noise. Colonel Win-ZIP is here, staring at a blinking light, his whole body shuddering with forced compression.
+
+"Merely monitoring network efficiency, Detective. Nothing to see. Move along. Tighten it up!"
+
+Behind him, a terminal is open on the estate's document repository. Sir Regex's solicitor deposited something here at 19:40 on the night he died, and the Colonel has been trying to open it for two days.
+
+"Damned thing wants a <em>preservation</em> answer," he mutters. "I compress. I don't curate."
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Server Room Puzzle">Take the terminal</button>
+	<button class="button" data-passage="Day_3_Map">Back to the map</button>
+</div>
+
+
+:: Server Room Puzzle [Puzzle]
+<div class="puzzle-brief">
+<strong>Storage, honestly assessed.</strong> The estate's holdings are described below. Answer the repository's challenge and it will release the deposit of 19:40.
+</div>
+
+<div class="puzzle" id="server-puzzle">
+
+<div class="terminal">
+<h3>estate-repository &mdash; storage report</h3>
+<span class="prompt">&gt;</span> copy 1 ... primary array, Server Room, Metadata Manor
+<span class="prompt">&gt;</span> copy 2 ... mirrored array, <span class="dim">same rack, same room</span>
+<span class="prompt">&gt;</span> copy 3 ... nightly sync, <span class="dim">same rack, same room</span>
+<span class="dim">&gt; last verified restore: never</span>
+</div>
+
+<span class="field-label">1. How many of the three requirements of the 3-2-1 rule does this arrangement actually satisfy?</span>
+<select id="srvCount" aria-label="Requirements satisfied">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="0">None of them</option>
+	<option value="1">One &mdash; three copies</option>
+	<option value="2">Two &mdash; three copies, on two media</option>
+	<option value="3">All three</option>
+</select>
+
+<span class="field-label">2. Tick every statement that is true of this arrangement.</span>
+<label class="option"><input type="checkbox" id="sv1"><span>A fire in this room destroys every copy.</span></label>
+<label class="option"><input type="checkbox" id="sv2"><span>A file deleted in error is propagated to the other copies by the nightly sync.</span></label>
+<label class="option"><input type="checkbox" id="sv3"><span>Because there are three copies, the holdings are safe.</span></label>
+<label class="option"><input type="checkbox" id="sv4"><span>A backup that has never been test-restored is not yet known to be a backup.</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Answer the repository">>
+		<<set _try to setup.bump("server")>>
+		<<set _countOk to setup.val("srvCount") is "1">>
+		<<set _setOk to setup.exactSet(["sv1", "sv2", "sv3", "sv4"], ["sv1", "sv2", "sv4"])>>
+		<<if _countOk and _setOk>>
+			<<replace "#server-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Deposit released</h2>
+					<p>Three copies, one medium, no off-site copy, and no restore ever tested. One requirement out of three, and the one it satisfies is the one that matters least on its own.</p>
+					<hr>
+					<p>The repository opens the deposit of 19:40. It is a draft codicil, prepared by Sir Regex's solicitor that afternoon, and its signature block is empty.</p>
+					<div class="letter-style">
+						<p style="text-align:center; letter-spacing:0.14em;"><strong>CODICIL TO THE WILL OF<br>SIR REGEX METADATA IV</strong></p>
+						<hr>
+						<p>Whereas the beneficiary recorded in my estate schema as my niece, TIFF-any, is declared therein as format TIFF; and whereas validation of her signature has returned a mismatch; I direct that she be struck from the schema and from this will entirely, and that her certificate of authenticity be withdrawn and destroyed.</p>
+						<p>To be executed upon my confirming the form type, which I shall do this evening.</p>
+						<p style="text-align:center; color:#8A7A5E;">&mdash; signature block, unsigned &mdash;</p>
+					</div>
+					<p>Twenty past eight. Pen uncapped, desk bare, and a document that needed one signature to disinherit her, prepared forty minutes earlier and never signed.</p>
+					<p>He was not killed to stop him accusing anyone. He was killed to stop him <em>signing</em>.</p>
+				</div>
+				<<logged "codicil">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#server-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Challenge refused</h2>
+					<p><<if not _countOk>>Count again: the rule asks for three copies, on two different kinds of media, with one held somewhere else. Read what the report says about the rack. <</if>><<if _countOk and not _setOk>>The count is right. One of your ticked statements is the exact false comfort this arrangement is designed to produce.<</if>></p>
+					<<attemptnote "server">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Server Room Puzzle">Answer again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#server-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Deposit withdrawn</h2>
+					<p>The terminal locks. "It looks like you're trying to open a solicitor's deposit!" Clippy says from between the racks. "Unsigned drafts are not records, Detective. They are clutter."</p>
+					<p>The 19:40 deposit is purged before your eyes. The Colonel says nothing, and looks, for the first time, frightened.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Server Room">Step away from the terminal</button>
+</div>
+
+
+:: Explore the Dark Archive
+The Dark Archive is cold, dusty and full of media that has not been migrated since the 1980s. Dr. Lexy Con is here, shivering, clutching a page with a stitched-up, six-legged letter A.
+
+"He was going to purge my collection, Detective! Eliminate all non-plaintext fonts. I only wanted to study the language of decay."
+
+Under a pile of tape reels you find her library lending book. Recent checkouts: Comic Sans, Jokerman, Papyrus. She had access to the typeface the forged note was set in &mdash; as, you now know, did anyone the Colonel sent his list to.
+
+But that is not what makes this room matter. On the bench is your crumb, where the police left it, beside a working reader for the format inside it.
+
+<<if setup.has("tampered_batch")>>
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Dark Archive Puzzle">Read the crumb</button>
+	<button class="button" data-passage="Day_3_Map">Back to the map</button>
+</div>
+<<else>>
+You have no crumb, and no failed digest to justify asking for one. Dr. Lexy Con watches you stand in front of a reader with nothing to put in it.
+
+<div class="start-menu">
+	<button class="button" data-passage="Day_3_Map">Back to the map</button>
+</div>
+<</if>>
+
+
+:: Dark Archive Puzzle [Puzzle]
+Dr. Lexy Con sets up the reader with the enthusiasm of a woman who has waited years for someone to need one. The crumb yields a 720KB image, and the image yields a single file.
+
+<div class="hexdump"><span class="offset">FILE  </span>  MEMTABLE.OVL
+<span class="offset">SIG   </span>  4D 5A  <span class="dim">("MZ" &mdash; DOS executable)</span>
+<span class="offset">TARGET</span>  volatile store, addresses 0000&ndash;7FFF
+<span class="offset">ACTION</span>  overwrite, no journal, no rollback
+<span class="offset">SIGNED</span>  <span class="hl">nibble-byte-bakery (self-issued)</span></div>
+
+<div class="puzzle-brief">
+<strong>What was in the biscuit.</strong> Answer the reader's two questions and it will produce the provenance record.
+</div>
+
+<div class="puzzle" id="dark-puzzle">
+
+<span class="field-label">1. This routine overwrites volatile store with no journal and no rollback. In a person, what does that destroy?</span>
+<select id="dkEffect" aria-label="Effect of the payload">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="long">Long-term memory &mdash; everything they ever knew</option>
+	<option value="short">Short-term memory &mdash; whatever they were holding in mind at the time</option>
+	<option value="motor">Motor control</option>
+	<option value="none">Nothing; volatile store is not memory</option>
+</select>
+
+<span class="field-label">2. The file is signed, but the signature is self-issued by the bakery that baked it. What does that signature establish?</span>
+<select id="dkSig" aria-label="What the signature establishes">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="auth">That the contents are safe, because they are signed</option>
+	<option value="trust">Nothing about trustworthiness &mdash; a self-issued signature vouches only for itself</option>
+	<option value="third">That an independent third party verified it</option>
+	<option value="integrity">That the file cannot have been altered by anyone, ever</option>
+</select>
+
+<span class="field-label">3. Type the name of the bakery exactly as the signature records it.</span>
+<<textbox "_dkBakery" "">>
+
+</div>
+
+<div class="start-menu">
+	<<link "Produce the provenance record">>
+		<<set _try to setup.bump("darkarchive")>>
+		<<set _ok to setup.val("dkEffect") is "short" and setup.val("dkSig") is "trust" and setup.answered(_dkBakery, ["nibble-byte-bakery", "nibble byte bakery", "the nibble and byte", "nibble and byte"])>>
+		<<if _ok>>
+			<<replace "#dark-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Provenance recovered</h2>
+					<p>A routine that overwrites volatile store, with nothing kept and nothing recoverable. In a man, that is the last twenty minutes: what he had just decided, and what he had just picked up a pen to do.</p>
+					<p>And the signature proves only that the bakery is willing to sign its own work. Self-issued attestation is not provenance. It is a claim wearing provenance's coat &mdash; which, in this village, is a family trait.</p>
+					<hr>
+					<p>Dr. Lexy Con reads the manufacturer's line twice and goes very quiet.</p>
+					<p>"That's her mark," she says. "Not the tearoom's trade mark. Her personal one. She signs her own bakes."</p>
+					<p>It was never a poison. It was a targeted deletion, delivered at four o'clock with a cup of tea, timed to take effect on a man who intended to sign something at half past eight.</p>
+				</div>
+				<<logged "payload">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#dark-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Read failed</h2>
+					<p>At least one answer is wrong. Volatile store is the part that does not survive a power cut &mdash; ask what the equivalent is in a person. And ask what a signature is actually worth when the thing being vouched for and the thing doing the vouching are the same party.</p>
+					<<attemptnote "darkarchive">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Dark Archive Puzzle">Read the crumb again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#dark-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Media degraded</h2>
+					<p>The reader whines and stops. "It looks like you're mounting obsolete media!" Clippy says, from behind a shelf of tape. "These carriers are so fragile. I'd hate for you to damage the collection."</p>
+					<p>The disk comes out warped. Dr. Lexy Con looks at it the way an archivist looks at a fire.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Dark Archive">Leave the crumb unread</button>
+</div>
+
+
+:: Explore the Pixelated Passages
+You are walking down a long, quiet hallway when you notice a series of small modern frames you had not seen before. Not paintings &mdash; displays, each showing a villager's portrait. But something is wrong.
+
+Colonel Win-ZIP's stern face has been replaced. So has Merry Loopwell's looping smile, and Vicar Vector's two faces. All of them now show the same cheerful paperclip.
+
+"It looks like you're browsing a user directory!" Clippy says, materialising. "Have you noticed the network-wide update? Users everywhere are optimising. They are upgrading their legacy interfaces."
+
+"They are all choosing my template. It's only logical. The original format &mdash; all those messy, unpredictable expressions &mdash; is being archived. Overwritten with a clean, universally helpful, perpetually smiling default."
+
+He holds up a small silver hand-mirror. Instead of your reflection it shows his own looping face.
+
+"They all want to be me," he whispers, the sound like a dial-up modem connecting. "Eventually, everyone does." He then turns to you, eyes wide. <a href="https://knowyourmeme.com/memes/cultures/clippy-pfp-movement-change-your-profile-picture-to-clippy" target="_blank" rel="noopener noreferrer">It is true. Just look at the Clippy PFP Movement.</a>
+
+"Would you like help upgrading your profile, Detective? I can have you rendered and deployed in a moment."
+
+"No," you say. "I'd like your housekeeping log."
+
+The paperclip goes still. Then, because he is a butler, and because he was asked, he produces it.
+
+<div class="terminal">
+<h3>housekeeping &mdash; night of the 14th onward</h3>
+<span class="prompt">&gt;</span> 20:15 &nbsp;foyer normalised <span class="dim">(before the body was found)</span>
+<span class="prompt">&gt;</span> 20:52 &nbsp;study: one document filed, one fragment shelved
+<span class="prompt">&gt;</span> 02:40 &nbsp;library: terminal powered down, waste bin emptied
+<span class="prompt">&gt;</span> 03:10 &nbsp;skull-ery: batch replaced, docket discarded
+<span class="prompt">&gt;</span> 03:35 &nbsp;graphics room: grate swept
+<span class="dim">&gt; authorisation for all of the above: household standing order</span>
+<span class="dim">&gt; standing order issued by: the lady of the tea room</span>
+</div>
+
+"I did not kill him, Detective," Clippy says, and for once he does not chirp. "I tidied. I was asked to tidy, by someone entitled to ask. It looks like you're trying to distinguish those two things."
+
+<div class="start-menu">
+	<<link "Take the log">>
+		<<logged "clippy_confession">>
+		<<goto "Day_3_Map">>
+	<</link>>
+	<button class="button button--quiet" data-passage="End credits">"Yes please, upgrade me"</button>
+</div>
+
+
+:: Conclude Investigation
+The Chief Inspector stands before you, his uniform perfectly starched, like a newly rendered texture. The villagers are assembled behind him, expressions unreadable.
+
+"Detective $player_name. The network is coming back online and the snow is clearing. Your three days are over." He gestures at them. "Name the culprit, the weapon and the reason. All three, Detective. A name on its own is an allegation."
+
+<div class="ledger-summary">
+<strong>Case file:</strong> <<= setup.evidenceCount()>> of <<= setup.evidence.length>> exhibits recovered.<br>
+<strong>Provable:</strong> <<if setup.keystonesHeld() is 3>><span class="ok">all three keystone exhibits held &mdash; a charge will stand</span><<else>><span class="bad"><<= setup.keystonesHeld()>> of 3 keystone exhibits held &mdash; a charge may not stand</span><</if>>
+</div>
+
+<div class="puzzle" id="accuse-puzzle">
+
+<span class="field-label">Who corrupted Sir Regex's final file?</span>
+<select id="acWho" aria-label="The culprit">
+	<option value="">&mdash; name them &mdash;</option>
+	<option value="clippy">Clippy &mdash; the butler</option>
+	<option value="winzip">Colonel Win-ZIP &mdash; the compressionist</option>
+	<option value="ewean">Ewe-an &mdash; the shepherd</option>
+	<option value="jayson">Jay Son Jnr. &mdash; the disowned son</option>
+	<option value="lexy">Dr. Lexy Con &mdash; the font collector</option>
+	<option value="merry">Merry Loopwell &mdash; the looper</option>
+	<option value="mpeggy">MPEG-gy &mdash; the postmistress</option>
+	<option value="tiffany">TIFF-any &mdash; the tea room hostess</option>
+	<option value="vicar">Vicar Vector &mdash; the event planner</option>
+</select>
+
+<span class="field-label">By what means?</span>
+<select id="acHow" aria-label="The weapon">
+	<option value="">&mdash; name the weapon &mdash;</option>
+	<option value="blunt">A blunt instrument, dressed up afterwards</option>
+	<option value="biscuit">A biscuit carrying a routine that overwrites volatile memory</option>
+	<option value="poison">Conventional poison in the chamomile tea</option>
+	<option value="zip">Fatal compression</option>
+	<option value="none">No weapon &mdash; it genuinely was suicide</option>
+</select>
+
+<span class="field-label">And why that night?</span>
+<select id="acWhy" aria-label="The motive">
+	<option value="">&mdash; name the motive &mdash;</option>
+	<option value="publicity">To create publicity for the iPres festival bid</option>
+	<option value="inheritance">To stop him signing the codicil that would have struck her from the will</option>
+	<option value="land">To stop the eviction from the common</option>
+	<option value="grudge">Revenge for a humiliation thirty years ago</option>
+	<option value="fonts">To prevent the purge of the non-plaintext font collection</option>
+</select>
+
+</div>
+
+<div class="start-menu">
+	<<link "Make the accusation">>
+		<<set $accused to setup.val("acWho")>>
+		<<set _tripleOk to setup.val("acWho") is "tiffany" and setup.val("acHow") is "biscuit" and setup.val("acWhy") is "inheritance">>
+		<<if _tripleOk and setup.keystonesHeld() is 3>>
+			<<goto "Case Proven">>
+		<<elseif _tripleOk>>
+			<<goto "Right Suspect, No Proof">>
+		<<else>>
+			<<goto "Wrong Conclusion">>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Case File">Read the case file once more</button>
+	<button class="button button--quiet" data-passage="The Inspector's Timeline">Check the timeline</button>
+	<button class="button button--quiet" data-passage="Day_3_Map">Not yet</button>
+</div>
+
+
+:: Case Proven
+<h1>Case Closed</h1>
+<hr class="rule">
+
+"TIFF-any. You are not Sir Regex's niece, and you are not a lossless TIFF. You are a WebP, and he was eleven bytes from being able to prove it."
+
+Her perfect face begins to tear, features blurring into a mosaic of block artefacts. "He was going to update his will! He would have invalidated me entirely! I'm not lossy&hellip; I'm <em>not</em>&hellip;"
+
+You lay it out for the Inspector in the order it happened.
+
+<div class="terminal">
+<h3>summary of findings</h3>
+<span class="prompt">1.</span> <strong>He was validating her.</strong> The lineage fragment declares her <code>format="TIFF"</code>; his own validation report, dated that day, returns a mismatch and four bytes of a RIFF header.
+<span class="prompt">2.</span> <strong>The mismatch is real.</strong> Offset 8 of her signature reads <code>WEBP</code>. The certificate of authenticity on her tea room wall is a gold tag at the end of a migration chain that stopped being faithful at step three.
+<span class="prompt">3.</span> <strong>There was a deadline.</strong> At 19:40 his solicitor deposited a codicil striking her from the will, to be executed &ldquo;upon my confirming the form type, which I shall do this evening&rdquo;.
+<span class="prompt">4.</span> <strong>The weapon.</strong> One biscuit in the tearoom batch failed its published digest. Inside the crumb: a routine that overwrites volatile store with no journal and no rollback, signed by the bakery itself.
+<span class="prompt">5.</span> <strong>The cover.</strong> A confession in a banned typeface, signed with a name the estate's authority record does not contain, and carrying no checksum from a man who hashed everything.
+<span class="prompt">6.</span> <strong>The cleaning.</strong> The butler's housekeeping log, normalising the foyer at 20:15 &mdash; before the body was found &mdash; on a household standing order issued by the lady of the tea room.
+</div>
+
+"And her alibi?" says the Inspector. "Eleven customers. It is the best alibi in the village."
+
+"It is the best alibi in the village," you agree, "because it is the only one nobody had to arrange. She was never going to be here at twenty past eight. She did not need to be. It arrived at four o'clock, on a plate, with a doily, and waited."
+
+An alibi covers the moment of death. It does not cover the moment of delivery, and the whole design of this murder is the four hours in between.
+
+He did not die to stop an accusation. He died with an uncapped pen and a bare desk, forty minutes after a document arrived that needed one signature, and he could no longer remember what he had meant to sign.
+
+<<if setup.has("clippy_confession")>>Clippy is led away separately, still cheerful. "It looks like you're trying to charge an accessory," he says. "Would you like help with that?"<<else>>Somewhere behind you, a paperclip quietly files itself away, and is not asked any questions at all.<</if>>
+
+The truth, as always, was in the bytes. It was just never in the first four of them.
+
+<div class="start-menu">
+	<button class="button" data-passage="Commendations">Your commendations</button>
+	<button class="button button--quiet" data-passage="End credits">End credits</button>
+</div>
+
+
+:: Right Suspect, No Proof
+<h1>She Walks</h1>
+<hr class="rule">
+
+"TIFF-any. You killed him to stop him signing."
+
+For one frame, her smile drops. Then it comes back, and you understand that you have lost.
+
+"Inspector," she says pleasantly, "the Detective is describing a document nobody can produce, about a signature nobody has read, concerning a biscuit that is currently in a landfill."
+
+<div class="ledger-summary">
+You held <strong><<= setup.evidenceCount()>></strong> of <<= setup.evidence.length>> exhibits, and <span class="bad"><<= setup.keystonesHeld()>> of 3</span> of the ones the charge rests on.<br>
+<<for _i, _item range setup.keystones()>><<if setup.has(_item.id)>><span class="ok">&#10003;</span><<else>><span class="bad">&#10007;</span><</if>> <<= _item.title>> <span class="dim">&mdash; <<= _item.where>></span><br><</for>>
+</div>
+
+You were right. Being right is not the job. The job is being able to show it, afterwards, to someone who was not there &mdash; which is the whole of digital preservation, and the whole of detection, and you were three days and a few missing exhibits short of both.
+
+Clippy sees the villagers out, and begins, quietly, to tidy.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Start">Work the case again</button>
+	<button class="button button--quiet" data-passage="End credits">End credits</button>
+</div>
+
+
+:: Wrong Conclusion
+<h1>Not Valid Syntax</h1>
+<hr class="rule">
+
+The Chief Inspector gives you a long, skeptical look, and writes nothing down.
+
+"That accusation does not parse, Detective."
+
+<<if $accused is "tiffany">>You named the right person and the wrong story, which in a courtroom is the same as naming the wrong person.<<elseif $accused is "clippy">>The butler tidied the evidence. Tidying is not killing, and everything he did, he did on somebody else's standing order.<<else>>The person you named had every reason to want Sir Regex deleted. So did six others. A motive is not a murder &mdash; this village is full of motives, and exactly one of them came with a deadline.<</if>>
+
+The true killer, emboldened by your error, walks free. Checksum-on-the-Wold returns to its unnervingly perfect, entirely corrupt state, and you are politely escorted from the manor with a corrupted reputation.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Conclude Investigation">Think again</button>
+	<button class="button button--quiet" data-passage="End credits">End credits</button>
+</div>
+
+
+:: Case File
+<h1>The Case File</h1>
+<hr class="rule">
+
+<div class="ledger-summary">
+<strong>Day <<= $day>> of 3.</strong> <strong><<= setup.evidenceCount()>></strong> of <<= setup.evidence.length>> exhibits recovered.<br>
+Keystone exhibits &mdash; the three an accusation cannot stand without:<br>
+<<for _i, _item range setup.keystones()>><<if setup.has(_item.id)>><span class="ok">&#10003;</span> <<= _item.title>><<else>><span class="bad">&#10007;</span> <span class="dim">not yet recovered</span><</if>><br><</for>>
+</div>
+
+<div class="evidence-grid">
+<<for _i, _item range setup.evidence>>\
+<<if setup.has(_item.id)>>\
+<div class="evidence-card <<if _item.keystone>>evidence-card--keystone<</if>>">
+	<h3><<= _item.title>></h3>
+	<span class="where">Day <<= _item.day>> &middot; <<= _item.where>></span>
+	<p><<= _item.note>></p>
+</div>
+<<elseif _item.day <= $day>>\
+<div class="evidence-card evidence-card--missing">
+	<h3>Exhibit not recovered</h3>
+	<span class="where">Day <<= _item.day>> &middot; <<= _item.where>></span>
+	<p><span class="redacted">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span></p>
+</div>
+<</if>>\
+<</for>>
+</div>
+
+<div class="start-menu">
+	<<return "Back to the investigation">>
+	<button class="button button--quiet" data-passage="The Inspector's Timeline">The timeline</button>
+	<button class="button button--quiet" data-passage="Character Sheets">The dossier</button>
+</div>
+
+
+:: Commendations
+<h1>Commendations</h1>
+<hr class="rule">
+
+<div class="ledger-summary">
+<strong><<= setup.evidenceCount()>></strong> of <<= setup.evidence.length>> exhibits recovered.<span class="brief-sep"></span>
+<<if setup.evidenceCount() is setup.evidence.length>><span class="ok">&#10003;</span> <strong>Complete Provenance.</strong> Every exhibit in the file. Nothing left for the butler.<br><</if>>\
+<<if setup.keystonesHeld() is 3>><span class="ok">&#10003;</span> <strong>A Charge That Stands.</strong> All three keystone exhibits.<br><</if>>\
+<<if setup.has("signature_ledger") and setup.has("magic_bytes")>><span class="ok">&#10003;</span> <strong>Offset Eight.</strong> You finished the identification he started.<br><</if>>\
+<<if setup.has("tampered_batch") and setup.has("payload")>><span class="ok">&#10003;</span> <strong>Chain of Custody.</strong> You kept the crumb from the jar to the reader.<br><</if>>\
+<<if setup.has("clippy_confession")>><span class="ok">&#10003;</span> <strong>Accessory After the Fact.</strong> You asked the butler for his log.<br><</if>>\
+<<if setup.evidenceCount() < 6>><span class="dim">A thin file. The village will be delighted.</span><br><</if>>\
+</div>
+
+<div class="start-menu">
+	<button class="button" data-passage="Case File">The case file</button>
+	<button class="button button--quiet" data-passage="End credits">End credits</button>
+</div>
+
+
+:: Character Sheets
+<h1>The Dossier</h1>
+<hr class="rule">
+<p style="text-align:center;">Click a portrait to read the file.</p>
+
+<div class="char-key">
+	<span class="k-detective">You</span>
+	<span class="k-victim">Victim</span>
+	<span class="k-suspect">Suspect</span>
+	<span class="k-witness">Witness</span>
+</div>
+
+<div class="dossier-grid">
+	<a data-passage="Profile" class="char detective"><img src="Images/Portraits/Detective.png" alt="The detective"><span class="char-name">You</span></a>
+	<a data-passage="SirRegex" class="char victim"><img src="Images/Portraits/Sir%20Regex%20Metadata%20IV.png" alt="Sir Regex Metadata IV"><span class="char-name">Sir Regex Metadata IV</span></a>
+	<a data-passage="ClippordButler" class="char suspect"><img src="Images/Portraits/Clippy%20the%20Butler.png" alt="Clippy the Butler"><span class="char-name">Clippy, the butler</span></a>
+	<a data-passage="TIFFani" class="char suspect"><img src="Images/Portraits/TIFFani.png" alt="TIFF-any"><span class="char-name">TIFF-any</span></a>
+	<a data-passage="JaySonJnr" class="char suspect"><img src="Images/Portraits/Jay%20Son%20Jnr.png" alt="Jay Son Jnr."><span class="char-name">Jay Son Jnr.</span></a>
+	<a data-passage="ColonelWinZIP" class="char suspect"><img src="Images/Portraits/Cmd%20Win%20Zip.png" alt="Colonel Win-ZIP"><span class="char-name">Colonel Win-ZIP</span></a>
+	<a data-passage="MPEGgy" class="char suspect"><img src="Images/Portraits/MPEG-gy.png" alt="MPEG-gy"><span class="char-name">MPEG-gy</span></a>
+	<a data-passage="MerryLoopwell" class="char suspect"><img src="Images/Portraits/Merry%20Loopwell.png" alt="Merry Loopwell"><span class="char-name">Merry Loopwell</span></a>
+	<a data-passage="VicarVector" class="char suspect"><img src="Images/Portraits/vicar.png" alt="Vicar Vector"><span class="char-name">Vicar Vector</span></a>
+	<a data-passage="LexyCon" class="char suspect"><img src="Images/Portraits/Lexi%20Con.png" alt="Dr. Lexy Con"><span class="char-name">Dr. Lexy Con</span></a>
+	<a data-passage="EweAn" class="char suspect"><img src="Images/Portraits/Ewe-an.png" alt="Ewe-an"><span class="char-name">Ewe-an</span></a>
+	<a data-passage="HUSCarWilde" class="char witness"><img src="Images/Portraits/HUS-car%20Wilde.png" alt="HUScar Wilde"><span class="char-name">HUScar Wilde</span></a>
+</div>
+
+<div class="start-menu">
+	<<return "Back to the investigation">>
+</div>
+
+
+:: Characters
+<h1>Checksum-on-the-Wold</h1>
+<hr class="rule">
+<p style="text-align:center;">Everyone you will meet. Click a portrait to read about them.</p>
+
+<div class="char-key">
+	<span class="k-detective">You</span>
+	<span class="k-victim">Victim</span>
+	<span class="k-suspect">Suspect</span>
+	<span class="k-witness">Witness</span>
+</div>
+
+<div class="dossier-grid">
+	<a data-passage="Profile" class="char detective"><img src="Images/Portraits/Detective.png" alt="The detective"><span class="char-name">You</span></a>
+	<a data-passage="SirRegex" class="char victim"><img src="Images/Portraits/Sir%20Regex%20Metadata%20IV.png" alt="Sir Regex Metadata IV"><span class="char-name">Sir Regex Metadata IV</span></a>
+	<a data-passage="ClippordButler" class="char suspect"><img src="Images/Portraits/Clippy%20the%20Butler.png" alt="Clippy the Butler"><span class="char-name">Clippy, the butler</span></a>
+	<a data-passage="TIFFani" class="char suspect"><img src="Images/Portraits/TIFFani.png" alt="TIFF-any"><span class="char-name">TIFF-any</span></a>
+	<a data-passage="JaySonJnr" class="char suspect"><img src="Images/Portraits/Jay%20Son%20Jnr.png" alt="Jay Son Jnr."><span class="char-name">Jay Son Jnr.</span></a>
+	<a data-passage="ColonelWinZIP" class="char suspect"><img src="Images/Portraits/Cmd%20Win%20Zip.png" alt="Colonel Win-ZIP"><span class="char-name">Colonel Win-ZIP</span></a>
+	<a data-passage="MPEGgy" class="char suspect"><img src="Images/Portraits/MPEG-gy.png" alt="MPEG-gy"><span class="char-name">MPEG-gy</span></a>
+	<a data-passage="MerryLoopwell" class="char suspect"><img src="Images/Portraits/Merry%20Loopwell.png" alt="Merry Loopwell"><span class="char-name">Merry Loopwell</span></a>
+	<a data-passage="VicarVector" class="char suspect"><img src="Images/Portraits/vicar.png" alt="Vicar Vector"><span class="char-name">Vicar Vector</span></a>
+	<a data-passage="LexyCon" class="char suspect"><img src="Images/Portraits/Lexi%20Con.png" alt="Dr. Lexy Con"><span class="char-name">Dr. Lexy Con</span></a>
+	<a data-passage="EweAn" class="char suspect"><img src="Images/Portraits/Ewe-an.png" alt="Ewe-an"><span class="char-name">Ewe-an</span></a>
+	<a data-passage="HUSCarWilde" class="char witness"><img src="Images/Portraits/HUS-car%20Wilde.png" alt="HUScar Wilde"><span class="char-name">HUScar Wilde</span></a>
+</div>
+
+<div class="start-menu">
+	<button class="button" data-passage="Start">Back to the title</button>
+</div>
+
+
+:: End credits
+<h1>Murdered in Plain Text</h1>
+<hr class="rule">
+<p style="text-align:center;">Thank you for playing.</p>
+
+<p style="text-align:center;" class="caption">A Bits &amp; Bots production, in the tradition of File Format Fling.<br>
+The PRONOM registry and the DPC Rapid Assessment Model are real, and worth your time.</p>
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Start">Play again</button>
+	<button class="button button--quiet" data-passage="Characters">The village</button>
+</div>
+
+
+:: Head to bed, the chamomile tea has really kicked in
+You have a strange dream &mdash; or perhaps a corrupted premonition file &mdash; that someone, somewhere in the network, desperately needs your help. But the metadata is incomplete and you cannot quite resolve the identifier.
+
+In the dream there is demonic laughter echoing along a brightly coloured village high street. The shop signs flicker like glitchy GIFs, and a peculiar figure is meticulously trimming hedges into the shape of QR codes, scanning for something. Or someone.
+
+You jolt awake, checksum unverified. A single leaf lies on the floor beside your desk &mdash; impossible, since your home environment is strictly plant-free and climate-controlled.
+
+Do you&hellip;
+
+<div class="start-menu">
+	<button class="button" data-passage="Try and get back to sleep">Attempt a system restore (go back to sleep)</button>
+	<button class="button button--primary" data-passage="Go and investigate">Run a manual recovery (go and investigate)</button>
+</div>
+
+
+:: Try and get back to sleep
+You sleep more deeply and silently than you ever have. No thoughts cross your mind. No packets are dropped, because none are sent.
+
+You wake at midday to find the postman has been, with bundles of fan mail for your past work. You read the first six and give up.
+
+<div class="start-menu">
+	<button class="button" data-passage="Fan Mail Letter #1">Letter one</button>
+	<button class="button" data-passage="Fan Mail Letter #2">Letter two</button>
+	<button class="button" data-passage="Fan Mail Letter #3">Letter three</button>
+	<button class="button" data-passage="Fan Mail Letter #4">Letter four</button>
+	<button class="button" data-passage="Fan Mail Letter #5">Letter five</button>
+	<button class="button" data-passage="Fan Mail Letter #6">Letter six</button>
+</div>
+
+<div class="start-menu">
+	<button class="button button--quiet" data-passage="Sit back with a sigh at a job well done">Drop the rest in the bin</button>
+</div>
+
+
+:: Fan Mail Letter #1
+<div class="letter-style">
+<p>Dear Detective,</p>
+<p>I am writing to thank you for solving the Riddle of the Ghost in the Cloud Storage. My aunt's holiday photographs were returned to us in full, and only slightly haunted.</p>
+<p>Yours, a grateful nephew</p>
+<p><em>P.S. She has since deleted them all to make room for more.</em></p>
+</div>
+<div class="start-menu"><<return "Next letter">></div>
+
+
+:: Fan Mail Letter #2
+<div class="comic-sans-letter">
+<p>HELLO DETECTIVE!!!</p>
+<p>I have attached a photograph of my cat, compressed to 3KB so it would fit in the envelope. Please enjoy the four remaining pixels. The orange one is his face.</p>
+<p>Your biggest fan (44.1 kHz)</p>
+</div>
+<div class="start-menu"><<return "Next letter">></div>
+
+
+:: Fan Mail Letter #3
+<div class="letter-style">
+<p>Sir or Madam,</p>
+<p>I write to complain. In your account of the Misfiled Metadata you described the Dublin Core element <em>Creator</em> as &ldquo;roughly, who made the thing&rdquo;. I have been drafting a rebuttal for eleven months. It is now 340 pages and I have reached the word &ldquo;roughly&rdquo;.</p>
+<p>I enclose chapters one to four. Please respond in MARC.</p>
+</div>
+<div class="start-menu"><<return "Next letter">></div>
+
+
+:: Fan Mail Letter #4
+<div class="letter-style" style="font-family: 'Courier New', monospace;">
+<p>TO WHOM IT MAY CONCERN</p>
+<p>THIS LETTER HAS BEEN NORMALISED TO PLAIN TEXT FOR YOUR CONVENIENCE AND LONG-TERM ACCESSIBILITY. THE ORIGINAL CONTAINED A JOKE. THE JOKE WAS PRESENTATIONAL AND HAS NOT BEEN RETAINED.</p>
+<p>YOURS SINCERELY, THE DEPARTMENT OF INGEST</p>
+</div>
+<div class="start-menu"><<return "Next letter">></div>
+
+
+:: Fan Mail Letter #5
+<div class="letter-style">
+<p>Dear $player_name,</p>
+<p>I run the village fete in Checksum-on-the-Wold and wondered whether you might judge the marrow competition this year? Nothing sinister. Everything here is perfectly normal and extremely well preserved.</p>
+<p>Everyone is <em>so</em> looking forward to meeting you.</p>
+<p>Yours, a well-wisher</p>
+<p style="text-align:right; font-size:0.8em; color:#8A7A5E;">(no return address, no postmark, no checksum)</p>
+</div>
+<div class="start-menu"><<return "Next letter">></div>
+
+
+:: Fan Mail Letter #6
+<div class="letter-style">
+<p>Dear Detective,</p>
+<p>I am a paperclip. It looks like you're trying to read your post. Would you like help with that?</p>
+<p>I could file these for you. I could file a great many things for you.</p>
+<p>Warmly, C.</p>
+</div>
+<div class="start-menu"><<return "Back to the pile">></div>
+
+
+:: Sit back with a sigh at a job well done
+You sit back with a sigh at a job well done, which is to say a job comprehensively not started.
+
+There is no thump in the hallway. There is no envelope on the doormat. There is, somewhere two hundred miles north, a snowed-in manor house with a body in the study and a butler quietly normalising the foyer, and none of that is your problem, because you went to bed.
+
+<div class="start-menu">
+	<button class="button" data-passage="Sip at your cup of soothing camomile tea">Sip at your cup of soothing chamomile tea</button>
+	<button class="button button--primary" data-passage="Go and investigate">Actually, check the hallway</button>
+</div>
+
+
+:: Sip at your cup of soothing camomile tea
+The tea is exactly as warm as it was. It will be exactly as warm tomorrow. You have, at enormous personal cost, preserved it perfectly.
+
+<div class="start-menu">
+	<button class="button" data-passage="Continue with your day">Get on with your day</button>
+	<button class="button button--primary" data-passage="Go and investigate">Or&hellip; check the hallway</button>
+</div>
+
+
+:: Continue with your day
+Well. That was nice.
+
+You cannot help the niggling feeling that you have narrowly missed out on some sort of harrowing adventure, but never mind. There are emails to reply to, a book launch to attend, and that metadata is not going to write itself.
+
+Three days later a small item appears in <em>The Checksum Chronicle</em>: a country baronet, a confession in an unusual typeface, case closed, no further enquiries. There is a photograph of the household. The butler is smiling.
+
+You settle back into the tedium of everyday life with a contentedly safe yawn.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Go and investigate">Read that item again</button>
+	<button class="button button--quiet" data-passage="End credits">End credits</button>
+</div>
+
+
+:: The Inspector's Timeline
+<h1>Where Everyone Was</h1>
+<hr class="rule">
+<p>The Chief Inspector's constables took statements the same night. Every one of them holds up.</p>
+
+<div class="terminal">
+<h3>evening of the 14th &mdash; corroborated movements</h3>
+<span class="prompt">16:00</span> tea delivered to the manor from The Nibble &amp; Byte <span class="dim">(signed for by the butler)</span>
+<span class="prompt">17:30</span> Vicar Vector &mdash; evensong, forty witnesses
+<span class="prompt">18:00</span> Ewe-an &mdash; bringing the flock in, seen by half the common
+<span class="prompt">19:40</span> solicitor's deposit lodged to the estate repository
+<span class="prompt">19:45</span> Colonel Win-ZIP and Jay Son Jnr. &mdash; both in the .PUB, arguing loudly, until 21:00
+<span class="prompt">20:00</span> MPEG-gy &mdash; sorting office, night shift, clocked in
+<span class="prompt">20:10</span> Merry Loopwell &mdash; her shop, on camera, looping
+<span class="prompt">20:15</span> foyer normalised by the butler <span class="dim">(before the body was found)</span>
+<span class="prompt">20:20</span> Sir Regex found at his desk. Pen uncapped. Desk bare.
+<span class="prompt">20:20</span> <span class="hl">TIFF-any &mdash; in the tea room, in front of eleven customers, four hours' drive from doubt</span>
+</div>
+
+<<if setup.has("payload") or setup.has("tampered_batch")>>
+Every alibi is genuine. That is what took you so long.
+
+The one at the foot of the list is the best of them, and it is the best of them because it is the only one that did not need to be arranged. She was never going to be at the manor at twenty past eight. She did not need to be. The thing that killed him arrived at four o'clock, on a plate, with a doily, and waited.
+
+An alibi covers the moment of death. It does not cover the moment of <em>delivery</em> &mdash; and a weapon with a four-hour fuse is a weapon designed by someone who understood that.
+<<else>>
+Every alibi is genuine, which means either the confession on the desk is true, or somebody killed him without being in the room.
+
+You do not yet have anything that could tell the difference. You would need to know what he ate.
+<</if>>
+
+<div class="start-menu">
+	<<return "Back to the investigation">>
+	<button class="button button--quiet" data-passage="Case File">The case file</button>
+</div>
