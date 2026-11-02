@@ -324,7 +324,9 @@ button.button:active { transform: translateY(1px); }
 .char-key > br,
 .character-page > br,
 .evidence-grid > br,
-.puzzle > br,
+/* SugarCube also puts a passage's tags on it as classes, so a passage
+   tagged [Puzzle] is itself .puzzle; only the form block is meant here. */
+.puzzle:not(.passage) > br,
 .puzzle-brief > br,
 .specimen-row > br,
 .question > br,
@@ -1067,77 +1069,117 @@ input[type="checkbox"], input[type="radio"] {
  * ------------------------------------------------------------------ */
 
 /* The evidence ledger. Each entry is one provable fact about the case.
-   `keystone` marks the three items the accusation cannot be proven without. */
+   `keystone` marks the three items the accusation cannot be proven without.
+   `lesson` and `link` feed the Preservationist's Notebook: what each puzzle
+   was actually teaching, and where to read more. */
 setup.evidence = [
 	{
 		id: "forged_note",
 		day: 1,
 		where: "The Study",
 		title: "The Jokerman note",
-		note: "A confession typeset in a font Sir Regex outlawed, signed with a name that fails validation and carrying no checksum. Not a suicide note. A forgery."
+		note: "A confession typeset in a font Sir Regex outlawed, signed with a name that fails validation and carrying no checksum. Not a suicide note. A forgery.",
+		lesson: "Authentication tests a record against independent evidence: authority files, known practice, fixity. Oddness is not forgery. A typo is not a provenance failure. Write down only the things that genuinely contradict what you can check.",
+		link: { text: "DPC Handbook: authenticity and integrity", url: "https://www.dpconline.org/handbook" }
 	},
 	{
 		id: "family_tree",
 		day: 1,
 		where: "The Study",
 		title: "The XML lineage fragment",
-		note: "Sir Regex's family recorded as a schema: one son DISOWNED, one niece flagged INVALID with <code>format=\"WebP\"</code>. He had already identified her."
+		note: "Sir Regex's family recorded as a schema: one son DISOWNED, one niece declared <code>format=\"TIFF\"</code> and flagged MISMATCH on four bytes of a RIFF header. He was halfway through identifying her when he died. His working draft of the same schema, written that evening, wanders: tags left open, and his own name entered in the place of his son's.",
+		lesson: "Validation compares what something declares against what it is observed to be. A declared format is metadata. Only the bytes are evidence.",
+		link: { text: "W3C: Extensible Markup Language (XML) 1.0", url: "https://www.w3.org/TR/xml/" }
 	},
 	{
 		id: "signature_ledger",
 		day: 1,
 		where: "The Library",
 		title: "The signature ledger",
-		note: "Sir Regex was byte-level identifying his own household. The final row is a sample taken from his niece's certificate of authenticity."
+		note: "Sir Regex was byte-level identifying his own household. The final row is a sample taken from his niece's certificate of authenticity.",
+		lesson: "Magic numbers identify formats, but a container signature such as RIFF or ZIP only names the wrapper. RIFF declares its form type at offset 8 (WAVE, AVI, WEBP). ZIP-based formats such as DOCX, EPUB and ODT need container signatures that look inside.",
+		link: { text: "The National Archives: PRONOM registry", url: "https://www.nationalarchives.gov.uk/PRONOM/" }
 	},
 	{
 		id: "lossy_tag",
 		day: 1,
 		where: "The Graphics Room",
 		title: "The torn integrity tag",
-		note: "A certificate tag claiming LOSSLESS - PROVENANCE VERIFIED, printed so badly the claim itself is full of compression artefacts. Torn from something."
+		note: "A certificate tag claiming LOSSLESS - PROVENANCE VERIFIED, printed so badly the claim itself is full of compression artefacts. Torn from something.",
+		lesson: "Losslessness belongs to the whole migration chain, not to the last step. Re-wrapping a JPEG as PNG or TIFF keeps the damage perfectly. Record every transformation as an event, so whoever comes next can see where fidelity was lost.",
+		link: { text: "DPC Handbook: file formats and standards", url: "https://www.dpconline.org/handbook" }
 	},
 	{
 		id: "tampered_batch",
 		day: 1,
 		where: "The Skull-ery",
 		title: "The broken fixity check",
-		note: "One biscuit in the tearoom batch no longer matches its published manifest. Its contents were altered after delivery."
+		note: "One biscuit in the tearoom batch no longer matches its published manifest. Its contents were altered after delivery.",
+		lesson: "Fixity checks have three outcomes, not two: verified, failed, and cannot compare. You cannot compare an MD5 with a SHA-256, and a missing digest proves nothing at all. Never report an \"unknown\" as a pass.",
+		link: { text: "NDSA Levels of Digital Preservation", url: "https://ndsa.org/publications/levels-of-digital-preservation/" }
 	},
 	{
 		id: "ipres_flyer",
 		day: 2,
 		where: "St. Mary of the Lossless",
 		title: "The iPres festival plan",
-		note: "Vicar Vector saw a murder as a publicity event. A motive - but a planner's motive, not a poisoner's."
+		note: "Vicar Vector saw a murder as a publicity event. A motive - but a planner's motive, not a poisoner's.",
+		lesson: "A migration is judged by what it loses. Converting SVG to PNG keeps appearance and transparency at the target size. It loses scalability, live text and editable geometry. Never count a property the source never had.",
+		link: { text: "W3C: Scalable Vector Graphics", url: "https://www.w3.org/Graphics/SVG/" }
+	},
+	{
+		id: "web_capture",
+		day: 2,
+		where: "St. Mary of the Lossless",
+		title: "The festival page, re-dated",
+		note: "The archived festival page that 'announced' Sir Regex's death before it happened. The page was captured at 18:32 on the 14th. The memorial banner was captured two days later and stitched in by the replay. The Vicar had no foreknowledge.",
+		lesson: "An archived web page is rebuilt at replay time from many captures. Each embedded resource has its own timestamp, and a replay tool will fill gaps with the nearest capture it has, earlier or later. Check every resource's datetime before you testify to what a page \"said\" on a given day.",
+		link: { text: "RFC 7089: Memento, time travel for the web", url: "https://www.rfc-editor.org/rfc/rfc7089" }
 	},
 	{
 		id: "font_list",
 		day: 2,
 		where: "The .PUB",
 		title: "The forbidden font list",
-		note: "Colonel Win-ZIP compiled Sir Regex's banned typefaces and kept them for 'future publications'. Whoever set the note in Jokerman had this list."
+		note: "Colonel Win-ZIP compiled Sir Regex's banned typefaces and kept them for 'future publications'. Whoever set the note in Jokerman had this list.",
+		lesson: "Well-formed and valid are different tests. A parser rejects single-quoted keys and trailing commas. Only a schema or a rule catches month 13 or a null digest. Numbers, null and key order are all perfectly legal JSON.",
+		link: { text: "RFC 8259: The JSON data interchange format", url: "https://www.rfc-editor.org/rfc/rfc8259" }
 	},
 	{
 		id: "love_letter",
 		day: 2,
 		where: "The Post Office",
 		title: "The M.P.G. letter and birth record",
-		note: "A secret affair, and a birth certificate naming Sir Regex as Jay Son Jnr.'s father. Motive enough for two suspects."
+		note: "A secret affair, and a birth certificate naming Sir Regex as Jay Son Jnr.'s father. Motive enough for two suspects.",
+		lesson: "OAIS: a SIP is received, checked and turned into an AIP, stored and monitored, and only then served as a DIP. Fixity is recorded on receipt and re-checked for as long as the thing is kept.",
+		link: { text: "CCSDS 650.0: the OAIS reference model", url: "https://public.ccsds.org/Pubs/650x0m2.pdf" }
+	},
+	{
+		id: "parish_register",
+		day: 2,
+		where: "The Post Office",
+		title: "The parish register",
+		note: "Sir Regex Metadata IV: baptised 1943, only child. No brother, no sister, and therefore no niece. TIFF-any's place in the family is a declaration nobody ever validated.",
+		lesson: "Write dates as ISO 8601 (YYYY-MM-DD) and stop the 03-04 argument before it starts. When a date is uncertain, approximate or partly unknown, EDTF can say so: 1874~ (approximately), 2011? (uncertain), 196X (unspecified digit), [a,b] (one of a set). Never guess and record the guess as fact.",
+		link: { text: "Library of Congress: Extended Date/Time Format (EDTF)", url: "https://www.loc.gov/standards/datetime/" }
 	},
 	{
 		id: "hex_gif",
 		day: 2,
 		where: "The Charming GIF",
 		title: "The restored proto-meme",
-		note: "Sir Regex smashing a looping toy, rendered twelve frames at a time. Merry Loopwell's grudge is real, and thirty years old."
+		note: "Sir Regex smashing a looping toy, rendered twelve frames at a time. Merry Loopwell's grudge is real, and thirty years old.",
+		lesson: "Significant properties are what make the work the work. For a 1990s web animation that means timing, looping and palette, not file size or a modified date. Emulation keeps behaviour without rewriting the file. Migration rewrites it.",
+		link: { text: "DPC Handbook: preservation strategies", url: "https://www.dpconline.org/handbook" }
 	},
 	{
 		id: "ewe_an_notice",
 		day: 2,
 		where: "The Village Common",
 		title: "The acquisition notice",
-		note: "Sir Regex was evicting Ewe-an in the language of a deletion policy. Brutal, and a strong motive."
+		note: "Sir Regex was evicting Ewe-an in the language of a deletion policy. Brutal, and a strong motive.",
+		lesson: "The DPC Rapid Assessment Model scores capability from 0 (minimal awareness) to 4 (optimised) across organisational and service sections. It is quick, and it is most useful repeated over time.",
+		link: { text: "DPC Rapid Assessment Model", url: "https://www.dpconline.org/digipres/implement-digipres/dpc-ram" }
 	},
 	{
 		id: "magic_bytes",
@@ -1145,7 +1187,18 @@ setup.evidence = [
 		where: "The Nibble & Byte",
 		title: "TIFF-any's file signature",
 		note: "A RIFF container with the form type WEBP. She is not a lossless TIFF and never was. Her identity is a claim her own bytes refuse.",
-		keystone: true
+		keystone: true,
+		lesson: "A format mismatch is evidence about identity, not about intent. Record what the file declares, what it was observed to be, and with which tool and signature. Stop there. The conclusion belongs to someone with more evidence.",
+		link: { text: "PRONOM: WebP (fmt/566)", url: "https://www.nationalarchives.gov.uk/PRONOM/fmt/566" }
+	},
+	{
+		id: "certificate",
+		day: 2,
+		where: "The Nibble & Byte",
+		title: "The certificate, re-read",
+		note: "Every technical claim on TIFF-any's certificate fails against her own header. Not TIFF. Not lossless: the chunk is VP8, not VP8L. Not 2,048 KB: 11,416 bytes. Not an unaltered original from 2005, because WebP did not exist until 2010.",
+		lesson: "RIFF sizes are little-endian, and the size field counts everything after the first eight bytes. 90 2C 00 00 is 0x2C90 = 11,408, so the file is 11,416 bytes. Lossy WebP's first chunk is 'VP8 '. Lossless is 'VP8L'. And a format cannot be older than its own invention: anachronism is one of the cheapest authenticity tests there is.",
+		link: { text: "Google: WebP container specification", url: "https://developers.google.com/speed/webp/docs/riff_container" }
 	},
 	{
 		id: "codicil",
@@ -1153,7 +1206,18 @@ setup.evidence = [
 		where: "The Server Room",
 		title: "The unsigned codicil",
 		note: "Drafted at 19:40 on the night of the murder: TIFF-any struck from the estate for failed authentication. Never signed. He did not live to sign it.",
-		keystone: true
+		keystone: true,
+		lesson: "3-2-1: three copies, on two kinds of media, one of them somewhere else. Copies in the same rack share every disaster. A sync copies your mistakes too. A backup nobody has restored is still only a hope.",
+		link: { text: "NDSA Levels of Digital Preservation", url: "https://ndsa.org/publications/levels-of-digital-preservation/" }
+	},
+	{
+		id: "access_log",
+		day: 3,
+		where: "The Server Room",
+		title: "The repository access log",
+		note: "Rebuilt from parity: at 15:12 on the 14th the draft codicil was previewed by the account TEA, the Nibble & Byte's catering login. She knew about the codicil forty-eight minutes before the tea went out.",
+		lesson: "RAID parity is XOR. Any one lost disk can be rebuilt from the survivors, because D2 = D1 XOR D3 XOR P. RAID protects you from a dead disk. It does not protect you from deletion, corruption, fire or theft. Those are written to every disk at once. RAID is not a backup.",
+		link: { text: "Wikipedia: standard RAID levels", url: "https://en.wikipedia.org/wiki/Standard_RAID_levels" }
 	},
 	{
 		id: "payload",
@@ -1161,14 +1225,54 @@ setup.evidence = [
 		where: "The Dark Archive",
 		title: "The biscuit's payload",
 		note: "The altered biscuit carried a routine that overwrites volatile memory. Enough to stop a man remembering what he meant to sign.",
-		keystone: true
+		keystone: true,
+		lesson: "A self-signed signature proves only that the signer is willing to sign. Trust comes from a party independent of the thing being vouched for. Provenance is a chain of custody, not a claim.",
+		link: { text: "DPC Handbook: digital forensics", url: "https://www.dpconline.org/handbook" }
+	},
+	{
+		id: "lending_book",
+		day: 3,
+		where: "The Dark Archive",
+		title: "The font lending book",
+		note: "Decoded from mojibake: on the 14th, the Jokerman typeface was lent to Tiff’s Tea Room. Clippy's 'cleaned' copy had already turned the apostrophe into a question mark.",
+		lesson: "There is no such thing as plain text without an encoding. â€™ is the three UTF-8 bytes of ’ read as Windows-1252. That is mojibake, and because the bytes are intact it can be reversed exactly. A '?' or � substitution cannot be reversed: the character was thrown away. Record encodings, and never 'clean' text you cannot reverse.",
+		link: { text: "Joel Spolsky: the absolute minimum about Unicode", url: "https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/" }
+	},
+	{
+		id: "note_txt",
+		day: 3,
+		where: "The Library",
+		title: "NOTE.TXT, undeleted",
+		note: "The 'confession' was typed on the Library PC at 16:04 on the 14th, four minutes after the tea was carried in, and later deleted. Plain text: x-fmt/111. The Jokerman was only added when it was printed.",
+		lesson: "Deleting a file on FAT just replaces the first byte of its directory entry with 0xE5. The data stays on disk until something overwrites it. FAT packs a creation time into 16 bits: 5 for hours, 6 for minutes, 5 for seconds ÷ 2. And plain text has no magic number, so PRONOM's x-fmt/111 can only be matched on the extension.",
+		link: { text: "PRONOM: Plain Text File (x-fmt/111)", url: "https://www.nationalarchives.gov.uk/PRONOM/x-fmt/111" }
+	},
+	{
+		id: "dictation_reel",
+		day: 3,
+		where: "The Skull-ery",
+		title: "The dictation reel",
+		note: "Sir Regex's voice memo, 20:05: 'Confirm the form type, then sign. Confirm the... confirm what?' Saved from Clippy's oven at the right temperature, and played once.",
+		lesson: "Every carrier dies in its own way. Some magnetic tape binders absorb moisture and go sticky (sticky-shed). A slow, low bake of around 50°C can make them playable again, briefly: digitise at once. Acetate gets vinegar syndrome, CD-R dye fades, and flash leaks charge when left unpowered.",
+		link: { text: "Wikipedia: sticky-shed syndrome", url: "https://en.wikipedia.org/wiki/Sticky-shed_syndrome" }
+	},
+	{
+		id: "police_photo",
+		day: 3,
+		where: "The Study",
+		title: "The police photograph",
+		note: "CRIME_SCENE_01.PNG is a JPEG, and says so in its first bytes. Kept exactly as the constable saved it, it is the only record of the Study before the butler: one sheet, one loose pen, one body, and no teacup.",
+		lesson: "An extension is a label. The bytes are the evidence. When they disagree, record both and the tool that noticed. Do not rename or convert the evidential original: create a derivative if you must, and log that as an event.",
+		link: { text: "The National Archives: DROID", url: "https://www.nationalarchives.gov.uk/information-management/manage-information/preserving-digital-records/droid/" }
 	},
 	{
 		id: "clippy_confession",
 		day: 3,
 		where: "The Pixelated Passages",
 		title: "Clippy's housekeeping log",
-		note: "The butler's own record of every item he 'tidied'. He did not kill Sir Regex. He normalised the evidence afterwards, on request."
+		note: "The butler's own record of every item he 'tidied', as PREMIS: he is the implementer of every event, and the lady of the tea room is the authorizer. He did not kill Sir Regex. He normalised the evidence afterwards, on request.",
+		lesson: "PREMIS describes preservation with four entities: Objects (what), Events (what happened), Agents (who or what did it) and Rights (on what authority). An agent's role matters: whoever authorised an event is as much a part of the record as whoever carried it out.",
+		link: { text: "Library of Congress: PREMIS", url: "https://www.loc.gov/standards/premis/" }
 	}
 ];
 
@@ -1273,6 +1377,18 @@ $(document).on(":passageend", function (ev) {
 	State.variables.visited[ev.passage.title] = true;
 });
 
+/* SugarCube builds passage markup node by node, and a <select> assembled
+   that way is left showing its LAST option rather than the placeholder.
+   That pre-answered every dropdown puzzle (the Library ledger read "WebP"
+   on every row). Put each one back on its blank first option. */
+$(document).on(":passagerender", function (ev) {
+	$(ev.content).find("select").each(function () {
+		if (this.options.length && this.options[0].value === "") {
+			this.selectedIndex = 0;
+		}
+	});
+});
+
 /* Accordion panels (Clippy's interrogation answers). */
 $(document).on("click", ".accordion", function () {
 	$(this).toggleClass("active");
@@ -1313,12 +1429,13 @@ $(document).on("click", ".map-reveal", function () {
 /* The two-attempt counter shared by every puzzle. */
 &lt;&lt;widget &quot;attemptnote&quot;&gt;&gt;
 	&lt;span class=&quot;attempts&quot;&gt;Attempt &lt;&lt;= setup.tries(_args[0])&gt;&gt; of 2&lt;/span&gt;
-&lt;&lt;/widget&gt;&gt;</tw-passagedata><tw-passagedata pid="3" name="PassageHeader" tags="" position="0,0" size="100,100">&lt;&lt;if $navEnabled and not [&quot;Start&quot;, &quot;Introducing&quot;, &quot;Start the game&quot;, &quot;Characters&quot;, &quot;Case File&quot;, &quot;Commendations&quot;, &quot;Character Sheets&quot;, &quot;The Inspector&#x27;s Timeline&quot;, &quot;End credits&quot;].includes(passage())&gt;&gt;\
+&lt;&lt;/widget&gt;&gt;</tw-passagedata><tw-passagedata pid="3" name="PassageHeader" tags="" position="0,0" size="100,100">&lt;&lt;if $navEnabled and not [&quot;Start&quot;, &quot;Introducing&quot;, &quot;Start the game&quot;, &quot;Characters&quot;, &quot;Case File&quot;, &quot;Commendations&quot;, &quot;Character Sheets&quot;, &quot;The Inspector&#x27;s Timeline&quot;, &quot;Notebook&quot;, &quot;End credits&quot;].includes(passage())&gt;&gt;\
 &lt;nav class=&quot;case-nav&quot;&gt;
 	&lt;span class=&quot;case-day&quot;&gt;Day &lt;&lt;= $day&gt;&gt;&lt;/span&gt;
 	&lt;&lt;link &quot;Case file&quot;&gt;&gt;&lt;&lt;goto &quot;Case File&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 	&lt;&lt;link &quot;Dossier&quot;&gt;&gt;&lt;&lt;goto &quot;Character Sheets&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 	&lt;&lt;link &quot;Timeline&quot;&gt;&gt;&lt;&lt;goto &quot;The Inspector&#x27;s Timeline&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
+	&lt;&lt;link &quot;Notebook&quot;&gt;&gt;&lt;&lt;goto &quot;Notebook&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 	&lt;span class=&quot;case-tally&quot;&gt;&lt;strong&gt;&lt;&lt;= setup.evidenceCount()&gt;&gt;&lt;/strong&gt; / &lt;&lt;= setup.evidence.length&gt;&gt; exhibits&lt;/span&gt;
 &lt;/nav&gt;
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Start" tags="" position="0,0" size="100,100">&lt;&lt;snow&gt;&gt;\
@@ -1331,8 +1448,9 @@ $(document).on("click", ".map-reveal", function () {
 		&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Introducing&quot;&gt;Open the case&lt;/button&gt;
 		&lt;button class=&quot;button&quot; data-passage=&quot;Characters&quot;&gt;The village&lt;/button&gt;
 	&lt;/div&gt;
+	&lt;img src=&quot;Images/txt.png&quot; alt=&quot;&quot; style=&quot;display:block; width:4.5rem; margin:1.4em auto 0; opacity:0.85;&quot;&gt;
 
-	&lt;p class=&quot;byline&quot;&gt;A Bits &amp;amp; Bots mystery &amp;middot; three days &amp;middot; fourteen exhibits&lt;/p&gt;
+	&lt;p class=&quot;byline&quot;&gt;A Bits &amp;amp; Bots mystery &amp;middot; three days &amp;middot; twenty-one puzzles &amp;middot; twenty-two exhibits&lt;/p&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="5" name="Introducing" tags="" position="0,0" size="100,100">You, the famous digital preservationist detective, need a moniker.
 
 &lt;span class=&quot;field-label&quot;&gt;Enter the name you will sign your report with&lt;/span&gt;
@@ -1521,7 +1639,7 @@ The network is down, the roads are blocked, and a murder has occurred. It is tim
 
 &lt;button class=&quot;accordion&quot; type=&quot;button&quot;&gt;Ask who tidied the foyer&lt;/button&gt;
 &lt;div class=&quot;panel&quot;&gt;
-	&lt;p&gt;The paperclip goes very still. &quot;I did, Detective. At a quarter past eight.&quot; A pause of precisely one frame. &quot;Before the body was found. I am told that is unusual. I find it efficient.&quot;&lt;/p&gt;
+	&lt;p&gt;The paperclip goes very still. &quot;I did, Detective. At a quarter past eight. And I cleared the tea things from the Study at the same time. Sir Regex was sitting at his desk with his pen. He did not seem to know I was there.&quot; A pause of precisely one frame. &quot;That was before the body was found. I am told that is unusual. I find it efficient.&quot;&lt;/p&gt;
 &lt;/div&gt;
 
 &lt;div class=&quot;start-menu&quot;&gt;
@@ -1886,7 +2004,7 @@ Two of these specimens begin with the same four bytes. Four bytes are not an ide
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Character Sheets&quot;&gt;All the suspects&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="31" name="Explore the Skull-ery" tags="Clue" position="0,0" size="100,100">You push open a creaking door into the manor&#x27;s kitchen, bizarrely labelled the &quot;Skull-ery&quot;. The air is thick with the smell of ozone and burnt sugar. It is unnervingly clean, save for a single ornate jar on the counter.
 
-Inside, amongst a few perfectly preserved biscuits, is a half-eaten one shaped like a floppy disk. It emits a faint, almost imperceptible static hum. There are crumbs on the flagstones, near where Sir Regex was found.
+Inside, amongst a few perfectly preserved biscuits, is a half-eaten one shaped like a floppy disk. It emits a faint, almost imperceptible static hum. Beside the jar, rinsed and draining, are one cup, one saucer and one plate. Someone has carried the tea things back from the Study, and put the leftovers back in the jar.
 
 Taped inside the lid is the delivery docket. The Nibble &amp;amp; Byte, it seems, ships its baking the way a decent repository ships its holdings: with a manifest, and a digest for every item.
 
@@ -2266,6 +2384,11 @@ Beneath it, pinned to the same sheet, is a validation report. It is dated the da
 &lt;span class=&quot;dim&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;action ........... OBTAIN FORM TYPE AND AMEND THE SCHEMA&lt;/span&gt;
 &lt;/div&gt;
 
+Tucked behind it is his working draft of the same schema, in his own hand, and the paper is still curled from the warmth of the lamp:
+
+&lt;img src=&quot;Images/XML_handwritten_family_tree.png&quot; alt=&quot;A handwritten XML family tree on lined paper. The tags wander: several are never closed or closed with the wrong name, and in the Child entry Sir Regex has written his own name and date of birth.&quot;&gt;
+&lt;p class=&quot;caption&quot;&gt;A man who validated everything, writing XML that would not parse. In the entry for his son, he has written his own name.&lt;/p&gt;
+
 This is not a family tree. It is a schema of disdain, and a work in progress. One son already declared invalid and cut out. One niece flagged, mid-validation, four bytes from being cut out too.
 
 &lt;span class=&quot;field-label&quot;&gt;The report names one element that failed validation. Which family member is it? (enter the name as the schema records it)&lt;/span&gt;
@@ -2301,6 +2424,8 @@ This is not a family tree. It is a schema of disdain, and a work in progress. On
 	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Sleep&quot;&gt;Initiate sleep sequence (count RAMs)&lt;/button&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Look at the map (Day 1)&quot;&gt;Not yet &amp;mdash; one more sweep&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="40" name="Sleep" tags="Story" position="0,0" size="100,100">&lt;&lt;snow&gt;&gt;\
+&lt;img src=&quot;Images/Counting%20digipres.png&quot; alt=&quot;A detective with a clipboard at night, counting little walking file formats (TIFF, WAV, PDF/A, numbered floppies and folders) as they hop over a fence.&quot;&gt;
+
 &lt;div class=&quot;letter-style&quot; style=&quot;font-family: Georgia, serif; text-align:center;&quot;&gt;
 &lt;p&gt;One TIFF drifts into a dark archive bed,&lt;br&gt;
 Two WAVs curl up where the fixity&#x27;s fed.&lt;br&gt;
@@ -2370,13 +2495,14 @@ Downstairs, the four rooms you searched last night have their doors closed. Clip
 
 On the wall behind her, in a gold frame, hangs a certificate of authenticity. The string that once held a tag to its corner has been cut.
 
-&lt;&lt;if setup.has(&quot;signature_ledger&quot;)&gt;&gt;You think of specimen F, and the four bytes Sir Regex never finished.&lt;&lt;else&gt;&gt;Something about the frame bothers you, though you could not say what.&lt;&lt;/if&gt;&gt;
+&lt;&lt;if setup.has(&quot;signature_ledger&quot;)&gt;&gt;You think of specimen F, and the four bytes Sir Regex never finished.&lt;&lt;else&gt;&gt;Something about the frame bothers you, though you could not say what.&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;lossy_tag&quot;)&gt;&gt; And you know where the tag went: behind the grate in the Graphics Room, torn. Sir Regex must have cut it down to take his sample home. Somebody came to the manor looking for it, and left a corner behind in their hurry.&lt;&lt;/if&gt;&gt;
 
 Her boast gives you an idea. You are carrying a Portable Integrity Scanner &amp;mdash; a device that reads the signature at the head of any object, or person, in this strange village.
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Tea Room Puzzle&quot;&gt;Use the Integrity Scanner on TIFF-any&lt;/button&gt;
-	&lt;button class=&quot;button&quot; data-passage=&quot;Day_2_Map&quot;&gt;Leave the tearoom for now&lt;/button&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Tea Room Certificate&quot;&gt;Take a closer look at the certificate&lt;/button&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Day_2_Map&quot;&gt;Leave the tearoom for now&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="44" name="Tea Room Puzzle" tags="Puzzle" position="0,0" size="100,100">You point the scanner at her while she builds a tower of pixel-perfect pastries. It whirs, and puts up the first sixteen bytes of her.
 
 &lt;div class=&quot;hexdump&quot;&gt;&lt;span class=&quot;offset&quot;&gt;00000000&lt;/span&gt;  &lt;span class=&quot;hl&quot;&gt;52 49 46 46&lt;/span&gt; 90 2C 00 00  &lt;span class=&quot;hl&quot;&gt;57 45 42 50&lt;/span&gt; 56 50 38 20
@@ -2556,7 +2682,8 @@ His face blurs, and his voice drops to a grainy whisper, like a low-bitrate reco
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Church Puzzle&quot;&gt;Accept the Vicar&#x27;s challenge&lt;/button&gt;
-	&lt;button class=&quot;button&quot; data-passage=&quot;Day_2_Map&quot;&gt;Decline for now&lt;/button&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Church Web Archive&quot;&gt;Jay Son Jnr. is in the porch, waving a tablet&lt;/button&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Day_2_Map&quot;&gt;Decline for now&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="48" name="Church Puzzle" tags="Puzzle" position="0,0" size="100,100">&lt;div class=&quot;puzzle-brief&quot;&gt;
 &lt;strong&gt;The parish migration.&lt;/strong&gt; Every stained-glass design in the parish record is an SVG. The diocese wants them all as PNG, at a fixed 1000 pixels wide.
 &lt;span class=&quot;brief-sep&quot;&gt;&lt;/span&gt;
@@ -2638,7 +2765,8 @@ Her offer seems innocent. The glint in her eye suggests you are about to handle 
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Post Office Puzzle&quot;&gt;Help recalibrate the sorter&lt;/button&gt;
-	&lt;button class=&quot;button&quot; data-passage=&quot;Day_2_Map&quot;&gt;Decline for now&lt;/button&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Post Office Register&quot;&gt;Help with the parish register&lt;/button&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Day_2_Map&quot;&gt;Decline for now&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="50" name="Post Office Puzzle" tags="Puzzle" position="0,0" size="100,100">&lt;div class=&quot;puzzle-brief&quot;&gt;
 &lt;strong&gt;The sorter has lost its order of operations.&lt;/strong&gt; A deposit arrives at the parish repository and becomes something a reader can be given. Put the six steps back in sequence, 1 to 6.
 &lt;span class=&quot;brief-sep&quot;&gt;&lt;/span&gt;
@@ -2973,6 +3101,7 @@ Overnight the manor has changed. Doors that were locked stand open, and doors yo
 	&lt;h1&gt;What Was Under the Pen&lt;/h1&gt;
 	&lt;hr class=&quot;rule&quot;&gt;
 	&lt;p&gt;Three new wings are open. The four rooms you searched on the first night have been tidied.&lt;/p&gt;
+	&lt;p&gt;But tidied is not the same as erased, and a preservationist knows the difference.&lt;/p&gt;
 	&lt;p&gt;&lt;em&gt;Whatever you wrote down, you still have. Whatever you left, Clippy has.&lt;/em&gt;&lt;/p&gt;
 &lt;/div&gt;
 
@@ -3000,10 +3129,10 @@ Overnight the manor has changed. Doors that were locked stand open, and doors yo
 	&lt;li&gt;&lt;a data-passage=&quot;Explore the Server Room&quot; class=&quot;&lt;&lt;if $evidence.codicil&gt;&gt;done&lt;&lt;/if&gt;&gt;&quot;&gt;The Server Room &amp;mdash; Colonel Win-ZIP&lt;/a&gt;&lt;/li&gt;
 	&lt;li&gt;&lt;a data-passage=&quot;Explore the Dark Archive&quot; class=&quot;&lt;&lt;if $evidence.payload&gt;&gt;done&lt;&lt;/if&gt;&gt;&quot;&gt;The Dark Archive &amp;mdash; Dr. Lexy Con&lt;/a&gt;&lt;/li&gt;
 	&lt;li&gt;&lt;a data-passage=&quot;Explore the Pixelated Passages&quot; class=&quot;&lt;&lt;if $evidence.clippy_confession&gt;&gt;done&lt;&lt;/if&gt;&gt;&quot;&gt;The Pixelated Passages&lt;/a&gt;&lt;/li&gt;
-	&lt;li&gt;&lt;a data-passage=&quot;Explore the Library 2&quot;&gt;The Library (searched)&lt;/a&gt;&lt;/li&gt;
-	&lt;li&gt;&lt;a data-passage=&quot;Explore the Skull-ery 2&quot;&gt;The Skull-ery (searched)&lt;/a&gt;&lt;/li&gt;
-	&lt;li&gt;&lt;a data-passage=&quot;Explore the Graphics Room 2&quot;&gt;The Graphics Room (searched)&lt;/a&gt;&lt;/li&gt;
-	&lt;li&gt;&lt;a data-passage=&quot;Explore The Study 2&quot;&gt;The Study (searched)&lt;/a&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;a data-passage=&quot;Explore the Library 2&quot; class=&quot;&lt;&lt;if $evidence.note_txt&gt;&gt;done&lt;&lt;/if&gt;&gt;&quot;&gt;The Library (tidied)&lt;/a&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;a data-passage=&quot;Explore the Skull-ery 2&quot; class=&quot;&lt;&lt;if $evidence.dictation_reel&gt;&gt;done&lt;&lt;/if&gt;&gt;&quot;&gt;The Skull-ery (tidied)&lt;/a&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;a data-passage=&quot;Explore the Graphics Room 2&quot;&gt;The Graphics Room (tidied)&lt;/a&gt;&lt;/li&gt;
+	&lt;li&gt;&lt;a data-passage=&quot;Explore The Study 2&quot; class=&quot;&lt;&lt;if $evidence.police_photo&gt;&gt;done&lt;&lt;/if&gt;&gt;&quot;&gt;The Study (tidied)&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;div class=&quot;start-menu&quot;&gt;
@@ -3014,7 +3143,10 @@ Overnight the manor has changed. Doors that were locked stand open, and doors yo
 
 &lt;&lt;if setup.has(&quot;signature_ledger&quot;)&gt;&gt;You let him finish, then take your own notes out of your coat. You copied specimen F on the first night. The ledger is gone; the evidence is not.&lt;&lt;else&gt;&gt;You never read the ledger. Whatever Sir Regex recorded about his own household went into a bin bag at some point between midnight and dawn, and you have only his handwriting on a scrap you cannot produce.&lt;&lt;/if&gt;&gt;
 
+Powered down, though. Not wiped. A butler tidies what he can see.
+
 &lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;if not setup.has(&quot;note_txt&quot;)&gt;&gt;&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Library Undelete&quot;&gt;Power the terminal back up&lt;/button&gt;&lt;&lt;/if&gt;&gt;
 	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Return to the map&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="60" name="Explore the Skull-ery 2" tags="" position="0,0" size="100,100">The scent of burnt sugar is gone, replaced by almond. The jar is still on the counter, filled to the brim with identical, perfectly ordinary shortbread. The half-eaten floppy disk biscuit has vanished, and so has the docket taped inside the lid.
 
@@ -3024,9 +3156,15 @@ He holds up a pristine biscuit. &quot;One wouldn&#x27;t want to ingest a malicio
 
 &lt;&lt;if setup.has(&quot;tampered_batch&quot;)&gt;&gt;You have the crumb, sealed, in your coat pocket, and the failed digest written down beside it. He has disposed of the batch. He has not disposed of the check.&lt;&lt;else&gt;&gt;You never ran the check. The batch is gone, the manifest with it, and the only thing you can now say about that biscuit is that it hummed.&lt;&lt;/if&gt;&gt;
 
+&lt;&lt;if not setup.has(&quot;dictation_reel&quot;)&gt;&gt;Behind him the oven is ticking up to temperature, and on the counter, waiting to go in, is a reel of brown quarter-inch tape.
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Skull-ery Tape&quot;&gt;&quot;Clippy &amp;mdash; what is that reel?&quot;&lt;/button&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Return to the map&lt;/button&gt;
+&lt;/div&gt;&lt;&lt;else&gt;&gt;
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Return to the map&lt;/button&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="61" name="Explore the Graphics Room 2" tags="" position="0,0" size="100,100">The over-compressed JPEG is no longer pinned to the corkboard, and the grate has been swept so thoroughly you could eat from it. Every speck of dust has gone. The room has been reverted to a pristine state.
+&lt;/div&gt;&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="61" name="Explore the Graphics Room 2" tags="" position="0,0" size="100,100">The over-compressed JPEG is no longer pinned to the corkboard, and the grate has been swept so thoroughly you could eat from it. Every speck of dust has gone. The room has been reverted to a pristine state.
 
 &quot;It looks like you&#x27;re analysing artefacts!&quot; Clippy appears in the doorway with a dustpan. &quot;I&#x27;ve swept away the noise. So important to ensure a high-quality, lossless narrative.&quot;
 
@@ -3046,7 +3184,10 @@ He did not clean a room. He sanitised a crime scene.
 
 &lt;&lt;if setup.has(&quot;forged_note&quot;) and setup.has(&quot;family_tree&quot;)&gt;&gt;You have both documents photographed and transcribed. And you notice what he has done with the pen: capped it, and set it square with the blotter. On the first night it was uncapped.&lt;&lt;elseif setup.has(&quot;forged_note&quot;) or setup.has(&quot;family_tree&quot;)&gt;&gt;You have one of the two documents recorded. The other is now a thing you remember rather than a thing you can show.&lt;&lt;else&gt;&gt;You searched this room and took nothing from it. The confession the police accepted is now the only version of that night anybody can produce.&lt;&lt;/if&gt;&gt;
 
+The room can be polished. A photograph of the room cannot. The constable who attended on the first night is drinking tea in the hall.
+
 &lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;if not setup.has(&quot;police_photo&quot;)&gt;&gt;&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Study Photograph&quot;&gt;Ask the constable for his photograph&lt;/button&gt;&lt;&lt;/if&gt;&gt;
 	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Return to the map&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="63" name="Explore the Server Room" tags="" position="0,0" size="100,100">The Server Room is loud and cold, buzzing with fan noise. Colonel Win-ZIP is here, staring at a blinking light, his whole body shuddering with forced compression.
 
@@ -3058,7 +3199,8 @@ Behind him, a terminal is open on the estate&#x27;s document repository. Sir Reg
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Server Room Puzzle&quot;&gt;Take the terminal&lt;/button&gt;
-	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Server Room Parity&quot;&gt;Look at the blinking disk array&lt;/button&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="64" name="Server Room Puzzle" tags="Puzzle" position="0,0" size="100,100">&lt;div class=&quot;puzzle-brief&quot;&gt;
 &lt;strong&gt;Storage, honestly assessed.&lt;/strong&gt; The estate&#x27;s holdings are described below. Answer the repository&#x27;s challenge and it will release the deposit of 19:40.
 &lt;/div&gt;
@@ -3146,20 +3288,22 @@ Behind him, a terminal is open on the estate&#x27;s document repository. Sir Reg
 
 &quot;He was going to purge my collection, Detective! Eliminate all non-plaintext fonts. I only wanted to study the language of decay.&quot;
 
-Under a pile of tape reels you find her library lending book. Recent checkouts: Comic Sans, Jokerman, Papyrus. She had access to the typeface the forged note was set in &amp;mdash; as, you now know, did anyone the Colonel sent his list to.
+She lends typefaces the way other people lend books, and she had access to the one the forged note was set in. So, you now know, did anyone the Colonel sent his list to. Her lending book would say who actually borrowed it, if anyone could read the printout Clippy made of it.
 
-But that is not what makes this room matter. On the bench is your crumb, where the police left it, beside a working reader for the format inside it.
+And on the bench is your crumb, handed over to the constable on the first night and brought down here for safe keeping, beside a working reader for the format inside it.
 
 &lt;&lt;if setup.has(&quot;tampered_batch&quot;)&gt;&gt;
 &lt;div class=&quot;start-menu&quot;&gt;
-	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Dark Archive Puzzle&quot;&gt;Read the crumb&lt;/button&gt;
-	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+	&lt;&lt;if not setup.has(&quot;payload&quot;)&gt;&gt;&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Dark Archive Puzzle&quot;&gt;Read the crumb&lt;/button&gt;&lt;&lt;/if&gt;&gt;
+	&lt;&lt;if not setup.has(&quot;lending_book&quot;)&gt;&gt;&lt;button class=&quot;button&quot; data-passage=&quot;Dark Archive Lending Book&quot;&gt;Read the lending book&lt;/button&gt;&lt;&lt;/if&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
 &lt;/div&gt;
 &lt;&lt;else&gt;&gt;
 You have no crumb, and no failed digest to justify asking for one. Dr. Lexy Con watches you stand in front of a reader with nothing to put in it.
 
 &lt;div class=&quot;start-menu&quot;&gt;
-	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+	&lt;&lt;if not setup.has(&quot;lending_book&quot;)&gt;&gt;&lt;button class=&quot;button&quot; data-passage=&quot;Dark Archive Lending Book&quot;&gt;Read the lending book&lt;/button&gt;&lt;&lt;/if&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
 &lt;/div&gt;
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="66" name="Dark Archive Puzzle" tags="Puzzle" position="0,0" size="100,100">Dr. Lexy Con sets up the reader with the enthusiasm of a woman who has waited years for someone to need one. The crumb yields a 720KB image, and the image yields a single file.
 
@@ -3259,26 +3403,11 @@ He holds up a small silver hand-mirror. Instead of your reflection it shows his 
 
 &quot;No,&quot; you say. &quot;I&#x27;d like your housekeeping log.&quot;
 
-The paperclip goes still. Then, because he is a butler, and because he was asked, he produces it.
-
-&lt;div class=&quot;terminal&quot;&gt;
-&lt;h3&gt;housekeeping &amp;mdash; night of the 14th onward&lt;/h3&gt;
-&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 20:15 &amp;nbsp;foyer normalised &lt;span class=&quot;dim&quot;&gt;(before the body was found)&lt;/span&gt;
-&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 20:52 &amp;nbsp;study: one document filed, one fragment shelved
-&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 02:40 &amp;nbsp;library: terminal powered down, waste bin emptied
-&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 03:10 &amp;nbsp;skull-ery: batch replaced, docket discarded
-&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 03:35 &amp;nbsp;graphics room: grate swept
-&lt;span class=&quot;dim&quot;&gt;&amp;gt; authorisation for all of the above: household standing order&lt;/span&gt;
-&lt;span class=&quot;dim&quot;&gt;&amp;gt; standing order issued by: the lady of the tea room&lt;/span&gt;
-&lt;/div&gt;
-
-&quot;I did not kill him, Detective,&quot; Clippy says, and for once he does not chirp. &quot;I tidied. I was asked to tidy, by someone entitled to ask. It looks like you&#x27;re trying to distinguish those two things.&quot;
+The paperclip goes still. Then, because he is a butler, and because he was asked, he goes to fetch it.
 
 &lt;div class=&quot;start-menu&quot;&gt;
-	&lt;&lt;link &quot;Take the log&quot;&gt;&gt;
-		&lt;&lt;logged &quot;clippy_confession&quot;&gt;&gt;
-		&lt;&lt;goto &quot;Day_3_Map&quot;&gt;&gt;
-	&lt;&lt;/link&gt;&gt;
+	&lt;&lt;if not setup.has(&quot;clippy_confession&quot;)&gt;&gt;&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Pixelated Passages Log&quot;&gt;Wait for the log&lt;/button&gt;&lt;&lt;/if&gt;&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;End credits&quot;&gt;&quot;Yes please, upgrade me&quot;&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="68" name="Conclude Investigation" tags="" position="0,0" size="100,100">The Chief Inspector stands before you, his uniform perfectly starched, like a newly rendered texture. The villagers are assembled behind him, expressions unreadable.
 
@@ -3358,8 +3487,21 @@ You lay it out for the Inspector in the order it happened.
 &lt;span class=&quot;prompt&quot;&gt;3.&lt;/span&gt; &lt;strong&gt;There was a deadline.&lt;/strong&gt; At 19:40 his solicitor deposited a codicil striking her from the will, to be executed &amp;ldquo;upon my confirming the form type, which I shall do this evening&amp;rdquo;.
 &lt;span class=&quot;prompt&quot;&gt;4.&lt;/span&gt; &lt;strong&gt;The weapon.&lt;/strong&gt; One biscuit in the tearoom batch failed its published digest. Inside the crumb: a routine that overwrites volatile store with no journal and no rollback, signed by the bakery itself.
 &lt;span class=&quot;prompt&quot;&gt;5.&lt;/span&gt; &lt;strong&gt;The cover.&lt;/strong&gt; A confession in a banned typeface, signed with a name the estate&#x27;s authority record does not contain, and carrying no checksum from a man who hashed everything.
-&lt;span class=&quot;prompt&quot;&gt;6.&lt;/span&gt; &lt;strong&gt;The cleaning.&lt;/strong&gt; The butler&#x27;s housekeeping log, normalising the foyer at 20:15 &amp;mdash; before the body was found &amp;mdash; on a household standing order issued by the lady of the tea room.
+&lt;span class=&quot;prompt&quot;&gt;6.&lt;/span&gt; &lt;strong&gt;The cleaning.&lt;/strong&gt; &lt;&lt;if setup.has(&quot;clippy_confession&quot;)&gt;&gt;The butler&#x27;s housekeeping log: tea things cleared and foyer normalised at 20:15, before the body was found, on a standing order whose authorizer was the lady of the tea room.&lt;&lt;else&gt;&gt;The foyer normalised at 20:15, before the body was found. The butler admits it, though you never got his log.&lt;&lt;/if&gt;&gt;
 &lt;/div&gt;
+
+&lt;&lt;if setup.has(&quot;access_log&quot;) or setup.has(&quot;note_txt&quot;) or setup.has(&quot;lending_book&quot;) or setup.has(&quot;dictation_reel&quot;) or setup.has(&quot;parish_register&quot;) or setup.has(&quot;certificate&quot;) or setup.has(&quot;police_photo&quot;)&gt;&gt;\
+&lt;div class=&quot;terminal&quot;&gt;
+&lt;h3&gt;corroboration&lt;/h3&gt;
+&lt;&lt;if setup.has(&quot;parish_register&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;&amp;middot;&lt;/span&gt; She is no niece. The parish register records Sir Regex as an only child.
+&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;certificate&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;&amp;middot;&lt;/span&gt; Her certificate swears to a WebP that predates WebP, and to a size her own header says is two hundred times too large.
+&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;access_log&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;&amp;middot;&lt;/span&gt; At 15:12 her catering account previewed the draft codicil. At 16:00 the tea arrived.
+&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;note_txt&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;&amp;middot;&lt;/span&gt; At 16:04 the &quot;suicide note&quot; was typed on the Library PC as NOTE.TXT, four hours before the death it confesses to.
+&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;lending_book&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;&amp;middot;&lt;/span&gt; That afternoon, Jokerman was lent to Tiff&amp;rsquo;s Tea Room.
+&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;police_photo&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;&amp;middot;&lt;/span&gt; The police photograph, kept as found: one sheet, one loose pen, no tea things.
+&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;dictation_reel&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;&amp;middot;&lt;/span&gt; At 20:05 his own voice: &quot;what was I about to sign?&quot;
+&lt;&lt;/if&gt;&gt;&lt;/div&gt;
+&lt;&lt;/if&gt;&gt;
 
 &quot;And her alibi?&quot; says the Inspector. &quot;Eleven customers. It is the best alibi in the village.&quot;
 
@@ -3442,6 +3584,7 @@ Keystone exhibits &amp;mdash; the three an accusation cannot stand without:&lt;b
 	&lt;&lt;return &quot;Back to the investigation&quot;&gt;&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;The Inspector&#x27;s Timeline&quot;&gt;The timeline&lt;/button&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Character Sheets&quot;&gt;The dossier&lt;/button&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Notebook&quot;&gt;The notebook&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="73" name="Commendations" tags="" position="0,0" size="100,100">&lt;h1&gt;Commendations&lt;/h1&gt;
 &lt;hr class=&quot;rule&quot;&gt;
 
@@ -3451,15 +3594,25 @@ Keystone exhibits &amp;mdash; the three an accusation cannot stand without:&lt;b
 &lt;&lt;if setup.keystonesHeld() is 3&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;A Charge That Stands.&lt;/strong&gt; All three keystone exhibits.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
 &lt;&lt;if setup.has(&quot;signature_ledger&quot;) and setup.has(&quot;magic_bytes&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;Offset Eight.&lt;/strong&gt; You finished the identification he started.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
 &lt;&lt;if setup.has(&quot;tampered_batch&quot;) and setup.has(&quot;payload&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;Chain of Custody.&lt;/strong&gt; You kept the crumb from the jar to the reader.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
-&lt;&lt;if setup.has(&quot;clippy_confession&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;Accessory After the Fact.&lt;/strong&gt; You asked the butler for his log.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
-&lt;&lt;if setup.evidenceCount() &lt; 6&gt;&gt;&lt;span class=&quot;dim&quot;&gt;A thin file. The village will be delighted.&lt;/span&gt;&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;clippy_confession&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;Accessory After the Fact.&lt;/strong&gt; You described the butler&#x27;s log in PREMIS, authorizer and all.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;certificate&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;Little-Endian.&lt;/strong&gt; You read a size field the right way round.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;web_capture&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;Temporal Coherence.&lt;/strong&gt; You cleared a vicar with a timestamp.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;parish_register&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;1874~&lt;/strong&gt; You recorded uncertainty without inventing certainty.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;note_txt&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;0xE5.&lt;/strong&gt; Deleted is not erased.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;dictation_reel&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;Fifty Degrees.&lt;/strong&gt; Baked, not burnt.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;police_photo&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;As Found.&lt;/strong&gt; You kept a mislabelled original exactly as it was.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;access_log&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;XOR.&lt;/strong&gt; You rebuilt a dead disk by hand.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.has(&quot;lending_book&quot;)&gt;&gt;&lt;span class=&quot;ok&quot;&gt;&amp;#10003;&lt;/span&gt; &lt;strong&gt;No Such Thing As Plain Text.&lt;/strong&gt; You un-mojibaked an apostrophe.&lt;br&gt;&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if setup.evidenceCount() &lt; 8&gt;&gt;&lt;span class=&quot;dim&quot;&gt;A thin file. The village will be delighted.&lt;/span&gt;&lt;br&gt;&lt;&lt;/if&gt;&gt;\
 &lt;/div&gt;
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button&quot; data-passage=&quot;Case File&quot;&gt;The case file&lt;/button&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Notebook&quot;&gt;The notebook&lt;/button&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;End credits&quot;&gt;End credits&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="74" name="Character Sheets" tags="" position="0,0" size="100,100">&lt;h1&gt;The Dossier&lt;/h1&gt;
 &lt;hr class=&quot;rule&quot;&gt;
+&lt;img src=&quot;Images/Files.png&quot; alt=&quot;Ten manila folders laid out on a dark desk, one for each villager.&quot; style=&quot;display:block; max-width:22rem; margin:0 auto;&quot;&gt;
 &lt;p style=&quot;text-align:center;&quot;&gt;Click a portrait to read the file.&lt;/p&gt;
 
 &lt;div class=&quot;char-key&quot;&gt;
@@ -3514,7 +3667,8 @@ Keystone exhibits &amp;mdash; the three an accusation cannot stand without:&lt;b
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button&quot; data-passage=&quot;Start&quot;&gt;Back to the title&lt;/button&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="76" name="End credits" tags="" position="0,0" size="100,100">&lt;h1&gt;Murdered in Plain Text&lt;/h1&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="76" name="End credits" tags="" position="0,0" size="100,100">&lt;img src=&quot;Images/txt.png&quot; alt=&quot;A plain .txt file icon stabbed with a dagger, bleeding a pool of ones and zeroes.&quot; style=&quot;display:block; max-width:9rem; margin:0 auto;&quot;&gt;
+&lt;h1&gt;Murdered in Plain Text&lt;/h1&gt;
 &lt;hr class=&quot;rule&quot;&gt;
 &lt;p style=&quot;text-align:center;&quot;&gt;Thank you for playing.&lt;/p&gt;
 
@@ -3523,6 +3677,7 @@ The PRONOM registry and the DPC Rapid Assessment Model are real, and worth your 
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Start&quot;&gt;Play again&lt;/button&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Notebook&quot;&gt;Your preservationist&#x27;s notebook&lt;/button&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Characters&quot;&gt;The village&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="77" name="Head to bed, the chamomile tea has really kicked in" tags="" position="0,0" size="100,100">You have a strange dream &amp;mdash; or perhaps a corrupted premonition file &amp;mdash; that someone, somewhere in the network, desperately needs your help. But the metadata is incomplete and you cannot quite resolve the identifier.
 
@@ -3538,6 +3693,8 @@ Do you&amp;hellip;
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="78" name="Try and get back to sleep" tags="" position="0,0" size="100,100">You sleep more deeply and silently than you ever have. No thoughts cross your mind. No packets are dropped, because none are sent.
 
 You wake at midday to find the postman has been, with bundles of fan mail for your past work. You read the first six and give up.
+
+&lt;img src=&quot;Images/Fanmail.png&quot; alt=&quot;Six envelopes, numbered one to six.&quot;&gt;
 
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button&quot; data-passage=&quot;Fan Mail Letter #1&quot;&gt;Letter one&lt;/button&gt;
@@ -3607,25 +3764,55 @@ You settle back into the tedium of everyday life with a contentedly safe yawn.
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Go and investigate&quot;&gt;Read that item again&lt;/button&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;End credits&quot;&gt;End credits&lt;/button&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="88" name="The Inspector&#x27;s Timeline" tags="" position="0,0" size="100,100">&lt;h1&gt;Where Everyone Was&lt;/h1&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="88" name="Notebook" tags="" position="0,0" size="100,100">&lt;h1&gt;The Preservationist&#x27;s Notebook&lt;/h1&gt;
+&lt;hr class=&quot;rule&quot;&gt;
+&lt;p style=&quot;text-align:center;&quot;&gt;What each exhibit taught you, written up the way you would explain it to a colleague, with somewhere to read more. The village is invented. Everything in this notebook is real.&lt;/p&gt;
+
+&lt;div class=&quot;ledger-summary&quot;&gt;
+&lt;strong&gt;&lt;&lt;= setup.evidenceCount()&gt;&gt;&lt;/strong&gt; of &lt;&lt;= setup.evidence.length&gt;&gt; pages written.&lt;&lt;if setup.evidenceCount() lt setup.evidence.length&gt;&gt; The rest are still blank, waiting for an exhibit.&lt;&lt;/if&gt;&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;evidence-grid&quot;&gt;
+&lt;&lt;for _i, _item range setup.evidence&gt;&gt;\
+&lt;&lt;if setup.has(_item.id)&gt;&gt;\
+&lt;div class=&quot;evidence-card &lt;&lt;if _item.keystone&gt;&gt;evidence-card--keystone&lt;&lt;/if&gt;&gt;&quot;&gt;
+	&lt;h3&gt;&lt;&lt;= _item.title&gt;&gt;&lt;/h3&gt;
+	&lt;span class=&quot;where&quot;&gt;Day &lt;&lt;= _item.day&gt;&gt; &amp;middot; &lt;&lt;= _item.where&gt;&gt;&lt;/span&gt;
+	&lt;p&gt;&lt;&lt;= _item.lesson&gt;&gt;&lt;/p&gt;
+	&lt;p style=&quot;margin-top:0.6em;&quot;&gt;&lt;a @href=&quot;_item.link.url&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;&lt;&lt;= _item.link.text&gt;&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;&lt;/if&gt;&gt;\
+&lt;&lt;/for&gt;&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;return &quot;Back&quot;&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Case File&quot;&gt;The case file&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="89" name="The Inspector&#x27;s Timeline" tags="" position="0,0" size="100,100">&lt;h1&gt;Where Everyone Was&lt;/h1&gt;
 &lt;hr class=&quot;rule&quot;&gt;
 &lt;p&gt;The Chief Inspector&#x27;s constables took statements the same night. Every one of them holds up.&lt;/p&gt;
 
 &lt;div class=&quot;terminal&quot;&gt;
 &lt;h3&gt;evening of the 14th &amp;mdash; corroborated movements&lt;/h3&gt;
-&lt;span class=&quot;prompt&quot;&gt;16:00&lt;/span&gt; tea delivered to the manor from The Nibble &amp;amp; Byte &lt;span class=&quot;dim&quot;&gt;(signed for by the butler)&lt;/span&gt;
-&lt;span class=&quot;prompt&quot;&gt;17:30&lt;/span&gt; Vicar Vector &amp;mdash; evensong, forty witnesses
+&lt;&lt;if setup.has(&quot;access_log&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;15:12&lt;/span&gt; &lt;span class=&quot;hl&quot;&gt;draft codicil previewed on the estate repository by the account TEA&lt;/span&gt;
+&lt;&lt;/if&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;16:00&lt;/span&gt; tea brought to the manor by hand from The Nibble &amp;amp; Byte &lt;span class=&quot;dim&quot;&gt;(signed for by the butler)&lt;/span&gt;
+&lt;&lt;if setup.has(&quot;note_txt&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;16:04&lt;/span&gt; &lt;span class=&quot;hl&quot;&gt;NOTE.TXT created on the Library PC&lt;/span&gt;
+&lt;&lt;/if&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;17:30&lt;/span&gt; Vicar Vector &amp;mdash; evensong, forty witnesses
 &lt;span class=&quot;prompt&quot;&gt;18:00&lt;/span&gt; Ewe-an &amp;mdash; bringing the flock in, seen by half the common
 &lt;span class=&quot;prompt&quot;&gt;19:40&lt;/span&gt; solicitor&#x27;s deposit lodged to the estate repository
 &lt;span class=&quot;prompt&quot;&gt;19:45&lt;/span&gt; Colonel Win-ZIP and Jay Son Jnr. &amp;mdash; both in the .PUB, arguing loudly, until 21:00
-&lt;span class=&quot;prompt&quot;&gt;20:00&lt;/span&gt; MPEG-gy &amp;mdash; sorting office, night shift, clocked in
-&lt;span class=&quot;prompt&quot;&gt;20:10&lt;/span&gt; Merry Loopwell &amp;mdash; her shop, on camera, looping
-&lt;span class=&quot;prompt&quot;&gt;20:15&lt;/span&gt; foyer normalised by the butler &lt;span class=&quot;dim&quot;&gt;(before the body was found)&lt;/span&gt;
+&lt;&lt;if setup.has(&quot;note_txt&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;19:52&lt;/span&gt; &lt;span class=&quot;hl&quot;&gt;TODO.TXT: &quot;CONFIRM FORM TYPE. SIGN CODICIL. 20:30.&quot;&lt;/span&gt;
+&lt;&lt;/if&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;20:00&lt;/span&gt; MPEG-gy &amp;mdash; sorting office, night shift, clocked in
+&lt;&lt;if setup.has(&quot;dictation_reel&quot;)&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;20:05&lt;/span&gt; &lt;span class=&quot;hl&quot;&gt;Sir Regex, dictating: &quot;what was I about to sign?&quot;&lt;/span&gt;
+&lt;&lt;/if&gt;&gt;&lt;span class=&quot;prompt&quot;&gt;20:10&lt;/span&gt; Merry Loopwell &amp;mdash; her shop, on camera, looping
+&lt;span class=&quot;prompt&quot;&gt;20:15&lt;/span&gt; tea things cleared from the study, foyer normalised by the butler &lt;span class=&quot;dim&quot;&gt;(before the body was found)&lt;/span&gt;
 &lt;span class=&quot;prompt&quot;&gt;20:20&lt;/span&gt; Sir Regex found at his desk. Pen uncapped. Desk bare.
 &lt;span class=&quot;prompt&quot;&gt;20:20&lt;/span&gt; &lt;span class=&quot;hl&quot;&gt;TIFF-any &amp;mdash; in the tea room, in front of eleven customers, four hours&#x27; drive from doubt&lt;/span&gt;
 &lt;/div&gt;
 
-&lt;&lt;if setup.has(&quot;payload&quot;) or setup.has(&quot;tampered_batch&quot;)&gt;&gt;
+&lt;&lt;if setup.has(&quot;web_capture&quot;)&gt;&gt;Jay Son&#x27;s &quot;proof&quot; that the Vicar announced the death at 18:32 has been struck out. The page said no such thing at the time: a banner captured two days later was stitched into the replay.
+
+&lt;&lt;/if&gt;&gt;&lt;&lt;if setup.has(&quot;payload&quot;) or setup.has(&quot;tampered_batch&quot;)&gt;&gt;
 Every alibi is genuine. That is what took you so long.
 
 The one at the foot of the list is the best of them, and it is the best of them because it is the only one that did not need to be arranged. She was never going to be at the manor at twenty past eight. She did not need to be. The thing that killed him arrived at four o&#x27;clock, on a plate, with a doily, and waited.
@@ -3640,6 +3827,928 @@ You do not yet have anything that could tell the difference. You would need to k
 &lt;div class=&quot;start-menu&quot;&gt;
 	&lt;&lt;return &quot;Back to the investigation&quot;&gt;&gt;
 	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Case File&quot;&gt;The case file&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="90" name="Tea Room Certificate" tags="Puzzle" position="0,0" size="100,100">&lt;&lt;if not setup.has(&quot;magic_bytes&quot;)&gt;&gt;\
+You stand in front of the gold frame for a long time. Every claim on it is precise, ceremonial and confident. Without a reading of her actual bytes there is nothing to hold any of them against. A certificate checked only against itself is just gold foil.
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Tea Room&quot;&gt;Step back from the frame&lt;/button&gt;
+&lt;/div&gt;
+&lt;&lt;else&gt;&gt;\
+You have her header. She has a certificate. You take the frame down while she is serving table six and read it against your scanner, line by line.
+
+&lt;div class=&quot;letter-style&quot; style=&quot;text-align:center; max-width:30rem;&quot;&gt;
+	&lt;h3 style=&quot;letter-spacing:0.2em; margin-top:0;&quot;&gt;CERTIFICATE OF AUTHENTICITY&lt;/h3&gt;
+	&lt;p style=&quot;text-align:left; font-family: ui-monospace, &#x27;Courier New&#x27;, monospace; font-size:0.85em; line-height:1.9;&quot;&gt;
+	Holder ...... TIFF-any, niece of the house&lt;br&gt;
+	Format ...... TIFF 6.0, uncompressed&lt;br&gt;
+	Fidelity .... LOSSLESS&lt;br&gt;
+	Extent ...... 2,048 KB&lt;br&gt;
+	State ....... unaltered original, never migrated, since 2005&lt;br&gt;
+	Subject ..... a lady of the house, c. 1874&lt;br&gt;
+	Issued by ... The Nibble &amp;amp; Byte&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;hexdump&quot;&gt;&lt;span class=&quot;offset&quot;&gt;00000000&lt;/span&gt;  52 49 46 46 &lt;span class=&quot;hl&quot;&gt;90 2C 00 00&lt;/span&gt;  57 45 42 50 &lt;span class=&quot;hl&quot;&gt;56 50 38 20&lt;/span&gt;
+&lt;span class=&quot;offset&quot;&gt;        &lt;/span&gt;   R  I  F  F   .  .  .  .    W  E  B  P   &lt;span class=&quot;hl&quot;&gt;V  P  8  &amp;#9251;&lt;/span&gt;&lt;/div&gt;
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;Hold the claims to the bytes.&lt;/strong&gt; Three things you need to know, all of them in the WebP specification:
+&lt;span class=&quot;brief-sep&quot;&gt;&lt;/span&gt;
+&amp;bull; The four bytes after &lt;code&gt;RIFF&lt;/code&gt; are the size of everything that &lt;em&gt;follows&lt;/em&gt; them, stored &lt;strong&gt;little-endian&lt;/strong&gt; (least significant byte first).&lt;br&gt;
+&amp;bull; A WebP&#x27;s first chunk names its coding: &lt;code&gt;VP8&amp;#9251;&lt;/code&gt; (with a trailing space), &lt;code&gt;VP8L&lt;/code&gt;, or &lt;code&gt;VP8X&lt;/code&gt; for the extended layout.&lt;br&gt;
+&amp;bull; Google first released WebP in 2010.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;cert-puzzle&quot;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;1. How large is she, really?&lt;/span&gt;
+&lt;select id=&quot;certSize&quot; aria-label=&quot;True file size&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; read the size field &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;a&quot;&gt;2,418,802,688 bytes&lt;/option&gt;
+	&lt;option value=&quot;b&quot;&gt;11,408 bytes&lt;/option&gt;
+	&lt;option value=&quot;c&quot;&gt;11,416 bytes&lt;/option&gt;
+	&lt;option value=&quot;d&quot;&gt;2,097,152 bytes (2,048 KB, as certified)&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;2. Tick every line of the certificate her own header disproves &amp;mdash; and nothing else.&lt;/span&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ce1&quot;&gt;&lt;span&gt;&lt;strong&gt;Format&lt;/strong&gt; &amp;mdash; TIFF 6.0, uncompressed&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ce2&quot;&gt;&lt;span&gt;&lt;strong&gt;Fidelity&lt;/strong&gt; &amp;mdash; LOSSLESS&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ce3&quot;&gt;&lt;span&gt;&lt;strong&gt;Extent&lt;/strong&gt; &amp;mdash; 2,048 KB&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ce4&quot;&gt;&lt;span&gt;&lt;strong&gt;State&lt;/strong&gt; &amp;mdash; unaltered original, never migrated, since 2005&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ce5&quot;&gt;&lt;span&gt;&lt;strong&gt;Subject&lt;/strong&gt; &amp;mdash; a lady of the house, c. 1874&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ce6&quot;&gt;&lt;span&gt;&lt;strong&gt;Issued by&lt;/strong&gt; &amp;mdash; The Nibble &amp;amp; Byte&lt;/span&gt;&lt;/label&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Annotate the certificate&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;certificate&quot;)&gt;&gt;
+		&lt;&lt;set _sizeOk to setup.val(&quot;certSize&quot;) is &quot;c&quot;&gt;&gt;
+		&lt;&lt;set _setOk to setup.exactSet([&quot;ce1&quot;, &quot;ce2&quot;, &quot;ce3&quot;, &quot;ce4&quot;, &quot;ce5&quot;, &quot;ce6&quot;], [&quot;ce1&quot;, &quot;ce2&quot;, &quot;ce3&quot;, &quot;ce4&quot;])&gt;&gt;
+		&lt;&lt;if _sizeOk and _setOk&gt;&gt;
+			&lt;&lt;replace &quot;#cert-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Four claims, four failures&lt;/h2&gt;
+					&lt;p&gt;&lt;code&gt;90 2C 00 00&lt;/code&gt;, read little-endian, is &lt;code&gt;0x00002C90&lt;/code&gt;: 11,408 bytes of chunks, plus the eight bytes of &lt;code&gt;RIFF&lt;/code&gt; and the size field itself. She is 11,416 bytes, about one two-hundredth of what her certificate says. Read it big-endian and you get two gigabytes, which is the kind of mistake that ends up in a catalogue for twenty years.&lt;/p&gt;
+					&lt;p&gt;Her first chunk is &lt;code&gt;VP8&amp;#9251;&lt;/code&gt;, the lossy coding. A lossless WebP would say &lt;code&gt;VP8L&lt;/code&gt;. And she cannot have been an unmigrated WebP since 2005, because there was no WebP before 2010. The certificate is not merely wrong. It is &lt;em&gt;anachronistic&lt;/em&gt;: it swears to a history her format could not have had.&lt;/p&gt;
+					&lt;p&gt;The subject line survives. A portrait of someone from 1874 can perfectly well be a WebP made last year. The date of the content is not the date of the file. And &quot;issued by The Nibble &amp;amp; Byte&quot; is true, which is precisely the problem. She certified herself.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;You hang the frame back up, very straight. TIFF-any notices anyway.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;certificate&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Tea Room&quot;&gt;Back to the tea room&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#cert-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Annotation smudged&lt;/h2&gt;
+					&lt;p&gt;&lt;&lt;if not _sizeOk&gt;&gt;Your size is wrong. Little-endian means the &lt;em&gt;last&lt;/em&gt; byte written is the most significant, and the size field does not count the eight bytes that precede the payload. &lt;&lt;/if&gt;&gt;&lt;&lt;if not _setOk&gt;&gt;Your set of disproved claims is wrong. A header can tell you about the &lt;em&gt;file&lt;/em&gt;: its format, coding, size and therefore its possible age. It cannot tell you who is in the picture, or who printed the certificate.&lt;&lt;/if&gt;&gt;&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;certificate&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Tea Room Certificate&quot;&gt;Read the certificate again&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#cert-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Reframed&lt;/h2&gt;
+					&lt;p&gt;&quot;It looks like you&#x27;re trying to annotate a certificate!&quot; Clippy says, lifting the frame out of your hands. He has come in for the manor&#x27;s scones. &quot;Original documents should never be marked up. I&#x27;ll take it somewhere safe.&quot;&lt;/p&gt;
+					&lt;p&gt;When you next look at the wall, there is a watercolour of a lighthouse where the certificate used to be.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Tea Room&quot;&gt;Back to the tea room&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Tea Room&quot;&gt;Leave the frame alone&lt;/button&gt;
+&lt;/div&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="91" name="Church Web Archive" tags="Puzzle" position="0,0" size="100,100">Jay Son Jnr. has followed you into the church with a tablet and an expression of enormous satisfaction.
+
+&quot;Proof,&quot; he says. &quot;The Vicar&#x27;s festival website, from the Parish Web Archive. Look at the date on the capture. He announced the old man&#x27;s death &lt;em&gt;two hours before it happened&lt;/em&gt;.&quot;
+
+The tablet shows a replay of the parish website, with the archive&#x27;s own banner across the top.
+
+&lt;div class=&quot;terminal&quot;&gt;
+&lt;h3&gt;parish web archive &amp;mdash; replay&lt;/h3&gt;
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; http://stmary.wold/ipres-bid
+&lt;span class=&quot;dim&quot;&gt;&amp;gt; resource                        captured (YYYYMMDDhhmmss)&lt;/span&gt;
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; ipres-bid.html &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; 20261114183207
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; &amp;nbsp;&amp;#9500; style.css &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; 20261114183208
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; &amp;nbsp;&amp;#9500; banner.png &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; &lt;span style=&quot;color:#D98074&quot;&gt;20261116091544&lt;/span&gt;
+&lt;span class=&quot;dim&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&quot;IN MEMORIAM SIR REGEX &amp;mdash; iPRES COMES TO THE WOLD&quot;&lt;/span&gt;
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; &amp;nbsp;&amp;#9492; schedule.html &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp; 20261114183210
+&lt;span class=&quot;dim&quot;&gt;&amp;gt; nearest available capture used for each embedded resource&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;What did the page say, and when?&lt;/strong&gt; A web archive does not store a page as one object. It stores each resource separately, at the moment the crawler happened to reach it, and rebuilds the page when you ask for it.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;wayback-puzzle&quot;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;1. When was the page itself (the HTML) captured?&lt;/span&gt;
+&lt;select id=&quot;wbHtml&quot; aria-label=&quot;HTML capture time&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; read the timestamp &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;a&quot;&gt;14th, at 18:32 &amp;mdash; before Sir Regex was found&lt;/option&gt;
+	&lt;option value=&quot;b&quot;&gt;16th, at 09:15 &amp;mdash; two days after&lt;/option&gt;
+	&lt;option value=&quot;c&quot;&gt;14th, at 20:20 &amp;mdash; the moment he was found&lt;/option&gt;
+	&lt;option value=&quot;d&quot;&gt;It cannot be read from a timestamp like that&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;2. Tick every statement that holds &amp;mdash; and nothing else.&lt;/span&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;wb1&quot;&gt;&lt;span&gt;The memorial banner was not on the page as it stood on the 14th. The replay borrowed it from a capture made two days later.&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;wb2&quot;&gt;&lt;span&gt;The Vicar announced Sir Regex&#x27;s death before it happened.&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;wb3&quot;&gt;&lt;span&gt;Each resource in an archived page carries its own capture time, and they need not agree.&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;wb4&quot;&gt;&lt;span&gt;Mixing captures like this shows the archive has been tampered with.&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;wb5&quot;&gt;&lt;span&gt;The banner file kept its name while its content changed. A crawler two days apart got two different images at one URL.&lt;/span&gt;&lt;/label&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Give Jay Son your reading&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;wayback&quot;)&gt;&gt;
+		&lt;&lt;set _htmlOk to setup.val(&quot;wbHtml&quot;) is &quot;a&quot;&gt;&gt;
+		&lt;&lt;set _setOk to setup.exactSet([&quot;wb1&quot;, &quot;wb2&quot;, &quot;wb3&quot;, &quot;wb4&quot;, &quot;wb5&quot;], [&quot;wb1&quot;, &quot;wb3&quot;, &quot;wb5&quot;])&gt;&gt;
+		&lt;&lt;if _htmlOk and _setOk&gt;&gt;
+			&lt;&lt;replace &quot;#wayback-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Temporally incoherent, and innocent&lt;/h2&gt;
+					&lt;p&gt;The HTML was captured at 18:32 on the 14th, and at 18:32 on the 14th the page carried a festival bid and nothing else. The parish updated &lt;code&gt;banner.png&lt;/code&gt; in place after the death. The crawler collected the new one on the 16th, and the replay, asked for the 14th, filled the gap with the nearest banner it had. Nothing was tampered with. That is simply how replay works, and why every resource in a capture carries its own datetime.&lt;/p&gt;
+					&lt;p&gt;A page in a web archive is a reconstruction, not a photograph. Before you testify to what it &quot;said&quot; on a day, check what each part of it was doing on that day.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;Jay Son takes the tablet back without a word. The Vicar, who has been listening from the vestry, looks at you as though you have performed a small miracle, which in Checksum-on-the-Wold you have. His motive was real. His foreknowledge was not.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;web_capture&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Church&quot;&gt;Back to the nave&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#wayback-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Out of sync&lt;/h2&gt;
+					&lt;p&gt;&lt;&lt;if not _htmlOk&gt;&gt;Read the HTML&#x27;s timestamp as year, month, day, hour, minute, second: four digits, then two, two, two, two, two. &lt;&lt;/if&gt;&gt;&lt;&lt;if not _setOk&gt;&gt;Your statements are wrong. Ask of each one: does the replay tell you about the &lt;em&gt;Vicar&lt;/em&gt;, or only about the &lt;em&gt;crawler&lt;/em&gt;? One of the resources was collected on a different day from the others.&lt;&lt;/if&gt;&gt;&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;wayback&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Church Web Archive&quot;&gt;Look at the replay again&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#wayback-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Page not found&lt;/h2&gt;
+					&lt;p&gt;&quot;It looks like you&#x27;re browsing an outdated page!&quot; Clippy says, leaning over Jay Son&#x27;s shoulder. &quot;Let me refresh it for you.&quot; He presses a key. The replay reloads as the live site: a single line reading &lt;em&gt;Under construction&lt;/em&gt;.&lt;/p&gt;
+					&lt;p&gt;Jay Son is already out of the door, telling the whole village what the Vicar knew.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Church&quot;&gt;Back to the nave&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Church&quot;&gt;Hand the tablet back&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="92" name="Post Office Register" tags="Puzzle" position="0,0" size="100,100">MPEG-gy has a second job for you, and this one she does not sing about.
+
+&quot;The diocese is digitising the parish register,&quot; she says, &quot;and the estate&#x27;s solicitor sent over his family file to cross-reference. But the dates are a &lt;em&gt;mess&lt;/em&gt;, darling. The new system only takes proper dates, and I won&#x27;t have it guess.&quot;
+
+The solicitor&#x27;s copy is typed, and it is clearly a fair copy of the schema Sir Regex kept in his study:
+
+&lt;img src=&quot;Images/XML_family_tree.png&quot; alt=&quot;A typed XML family file: Sir Regex Metadata IV, born 01-01-1943; Jay Son Junior, born 01-01-1993; TIFFany, niece, born 03-04-2005, dedicates her life to the Nibble and Byte.&quot;&gt;
+&lt;p class=&quot;caption&quot;&gt;The solicitor&#x27;s copy. Note how every date is written.&lt;/p&gt;
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;Record what you know, and no more.&lt;/strong&gt; Write each date the way the register requires: ISO 8601 (&lt;code&gt;YYYY-MM-DD&lt;/code&gt;) where the date is certain, and the Extended Date/Time Format where it is not.
+&lt;span class=&quot;brief-sep&quot;&gt;&lt;/span&gt;
+In EDTF, &lt;code&gt;~&lt;/code&gt; means &lt;em&gt;approximately&lt;/em&gt;, &lt;code&gt;?&lt;/code&gt; means &lt;em&gt;uncertain&lt;/em&gt;, &lt;code&gt;X&lt;/code&gt; stands for a digit nobody knows, and &lt;code&gt;[a,b]&lt;/code&gt; means &lt;em&gt;one of these, we don&#x27;t know which&lt;/em&gt;. An interval such as &lt;code&gt;1990/1999&lt;/code&gt; is for something that lasted the whole time.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;register-puzzle&quot;&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;Sir Regex Metadata IV, born &lt;code&gt;01-01-1943&lt;/code&gt;&lt;small&gt;From the solicitor&#x27;s copy&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;rgA&quot; aria-label=&quot;Sir Regex&#x27;s date of birth&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; record as &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;1943-01-01&quot;&gt;1943-01-01&lt;/option&gt;
+		&lt;option value=&quot;1943~&quot;&gt;1943~&lt;/option&gt;
+		&lt;option value=&quot;[1943-01-01,1943-01-01]&quot;&gt;[1943-01-01,1943-01-01]&lt;/option&gt;
+		&lt;option value=&quot;194X&quot;&gt;194X&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;TIFFany, born &lt;code&gt;03-04-2005&lt;/code&gt;&lt;small&gt;The copy never says whether it writes day or month first, and no other date in it settles the question&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;rgB&quot; aria-label=&quot;TIFF-any&#x27;s date of birth&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; record as &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;2005-04-03&quot;&gt;2005-04-03&lt;/option&gt;
+		&lt;option value=&quot;2005-03-04&quot;&gt;2005-03-04&lt;/option&gt;
+		&lt;option value=&quot;set&quot;&gt;[2005-03-04,2005-04-03]&lt;/option&gt;
+		&lt;option value=&quot;2005-03-04/2005-04-03&quot;&gt;2005-03-04/2005-04-03&lt;/option&gt;
+		&lt;option value=&quot;2005~&quot;&gt;2005~&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;Lady Metadata, his mother, died &quot;in the sixties&quot;&lt;small&gt;The last digit of the year has been eaten by damp&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;rgC&quot; aria-label=&quot;Lady Metadata&#x27;s date of death&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; record as &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;196X&quot;&gt;196X&lt;/option&gt;
+		&lt;option value=&quot;1960/1969&quot;&gt;1960/1969&lt;/option&gt;
+		&lt;option value=&quot;1965~&quot;&gt;1965~&lt;/option&gt;
+		&lt;option value=&quot;1960&quot;&gt;1960&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;Portrait of a lady of the house, painted &quot;about 1874&quot;&lt;small&gt;Pencilled on the back of the frame&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;rgD&quot; aria-label=&quot;Date of the portrait&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; record as &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;1874~&quot;&gt;1874~&lt;/option&gt;
+		&lt;option value=&quot;1874?&quot;&gt;1874?&lt;/option&gt;
+		&lt;option value=&quot;1874&quot;&gt;1874&lt;/option&gt;
+		&lt;option value=&quot;187X&quot;&gt;187X&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;TIFF-any first arrived in the village &quot;in 2011, I think, but don&#x27;t hold me to it&quot;&lt;small&gt;Statement of Vicar Vector&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;rgE&quot; aria-label=&quot;Date TIFF-any arrived&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; record as &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;2011?&quot;&gt;2011?&lt;/option&gt;
+		&lt;option value=&quot;2011~&quot;&gt;2011~&lt;/option&gt;
+		&lt;option value=&quot;2011&quot;&gt;2011&lt;/option&gt;
+		&lt;option value=&quot;201X&quot;&gt;201X&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Enter them in the register&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;register&quot;)&gt;&gt;
+		&lt;&lt;set _right to setup.score({ rgA: &quot;1943-01-01&quot;, rgB: &quot;set&quot;, rgC: &quot;196X&quot;, rgD: &quot;1874~&quot;, rgE: &quot;2011?&quot; })&gt;&gt;
+		&lt;&lt;if _right is 5&gt;&gt;
+			&lt;&lt;replace &quot;#register-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Entered, and nothing invented&lt;/h2&gt;
+					&lt;p&gt;&lt;code&gt;01-01-1943&lt;/code&gt; reads the same in either order, so it is certain: &lt;code&gt;1943-01-01&lt;/code&gt;. &lt;code&gt;03-04-2005&lt;/code&gt; is not: the third of April or the fourth of March, and the honest record is &lt;code&gt;[2005-03-04,2005-04-03]&lt;/code&gt;, one of the two. An interval would claim she was being born for a month. A damp-eaten year is &lt;code&gt;196X&lt;/code&gt;. &quot;About&quot; is approximate, &lt;code&gt;~&lt;/code&gt;. &quot;I think, but don&#x27;t hold me to it&quot; is uncertain, &lt;code&gt;?&lt;/code&gt;. They are different things, and the difference survives only if you write it down.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;The register accepts every line. Then, because the diocese&#x27;s system cross-references, it puts up the baptism page for 1943 beside them:&lt;/p&gt;
+					&lt;div class=&quot;letter-style&quot;&gt;
+						&lt;p&gt;&lt;em&gt;Regex, son of Sir Regex Metadata III and Lady Metadata. Baptised at St. Mary of the Lossless.&lt;/em&gt;&lt;/p&gt;
+						&lt;p style=&quot;text-align:center;&quot;&gt;&lt;strong&gt;Only child.&lt;/strong&gt;&lt;/p&gt;
+					&lt;/div&gt;
+					&lt;p&gt;No brother. No sister. No niece. MPEG-gy reads it over your shoulder and, for once, says nothing that rhymes.&lt;/p&gt;
+					&lt;p&gt;She is down in his schema as his niece because she declared it, and because nobody validated the declaration until a month ago. And then somebody did.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;parish_register&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Post Office&quot;&gt;Back to the counter&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#register-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Register rejects the batch&lt;/h2&gt;
+					&lt;p&gt;&lt;&lt;= _right&gt;&gt; of 5 dates are recorded as the evidence allows. The register will not take a guess dressed as a fact. And it will not take an uncertainty you have made bigger or smaller than it really is. &lt;em&gt;Approximately&lt;/em&gt; and &lt;em&gt;uncertain&lt;/em&gt; are not the same claim, and neither is &lt;em&gt;one of two days&lt;/em&gt; the same as &lt;em&gt;a whole month&lt;/em&gt;.&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;register&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Post Office Register&quot;&gt;Re-enter the dates&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#register-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Auto-corrected&lt;/h2&gt;
+					&lt;p&gt;&quot;It looks like you&#x27;re entering dates!&quot; Clippy says, from behind the parcel scales. &quot;I&#x27;ve set them all to today. Much tidier, and so easy to sort.&quot;&lt;/p&gt;
+					&lt;p&gt;The register now records that everyone in Checksum-on-the-Wold was born, baptised and painted this morning. The cross-reference finds nothing at all.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Post Office&quot;&gt;Back to the counter&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Post Office&quot;&gt;Leave the dates as they are&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="93" name="Library Undelete" tags="Puzzle" position="0,0" size="100,100">You find the wall socket behind the stacks, and the archival PC grinds back to life with the sound of a man clearing his throat. The browser is gone and the PRONOM tab with it. What is left is a disk, and on a disk this old, the directory is a table you can read.
+
+&lt;div class=&quot;hexdump&quot;&gt;&lt;span class=&quot;offset&quot;&gt;entry   name (8.3, 11 bytes)               attr  created   size&lt;/span&gt;
+&lt;span class=&quot;offset&quot;&gt;0x0000&lt;/span&gt;  53 49 47 53 20 20 20 20 43 53 56   20    0x6A40   1,822
+&lt;span class=&quot;offset&quot;&gt;0x0020&lt;/span&gt;  &lt;span class=&quot;hl&quot;&gt;E5&lt;/span&gt; 4F 54 45 20 20 20 20 54 58 54   20    0x8080     412
+&lt;span class=&quot;offset&quot;&gt;0x0040&lt;/span&gt;  54 4F 44 4F 20 20 20 20 54 58 54   20    0x9E80      96
+&lt;span class=&quot;offset&quot;&gt;       &lt;/span&gt;   &lt;span class=&quot;dim&quot;&gt;S I G S . . . . C S V  /  ? O T E . . . . T X T  /  T O D O . . . . T X T&lt;/span&gt;&lt;/div&gt;
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;Erased, or merely deleted?&lt;/strong&gt; Clippy says the terminal was &quot;permanently erased&quot;. This is a FAT disk. On FAT, a file&#x27;s name lives in a 32-byte directory entry: eight characters, then a three-character extension, padded with spaces (&lt;code&gt;20&lt;/code&gt;).
+&lt;span class=&quot;brief-sep&quot;&gt;&lt;/span&gt;
+The creation time is packed into sixteen bits as &lt;code&gt;hhhhh mmmmmm sssss&lt;/code&gt;: five bits of hours, six of minutes, and five of &lt;em&gt;seconds divided by two&lt;/em&gt;. The values above are already in the right byte order for you.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;undelete-puzzle&quot;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;1. Which entry has been deleted?&lt;/span&gt;
+&lt;select id=&quot;udEntry&quot; aria-label=&quot;Deleted entry&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; choose &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;0&quot;&gt;0x0000 &amp;mdash; SIGS.CSV&lt;/option&gt;
+	&lt;option value=&quot;20&quot;&gt;0x0020 &amp;mdash; ?OTE.TXT&lt;/option&gt;
+	&lt;option value=&quot;40&quot;&gt;0x0040 &amp;mdash; TODO.TXT&lt;/option&gt;
+	&lt;option value=&quot;none&quot;&gt;None of them; deleted files leave no entry&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;2. Its first letter has been overwritten. What was the file called? (name and extension)&lt;/span&gt;
+&lt;&lt;textbox &quot;_udName&quot; &quot;&quot;&gt;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;3. Decode its creation time, &lt;code&gt;0x8080&lt;/code&gt;.&lt;/span&gt;
+&lt;select id=&quot;udTime&quot; aria-label=&quot;Creation time&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; decode &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;0808&quot;&gt;08:08&lt;/option&gt;
+	&lt;option value=&quot;1604&quot;&gt;16:04&lt;/option&gt;
+	&lt;option value=&quot;1280&quot;&gt;12:08&lt;/option&gt;
+	&lt;option value=&quot;2020&quot;&gt;20:20&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;4. Can its contents still be read?&lt;/span&gt;
+&lt;select id=&quot;udRecover&quot; aria-label=&quot;Recoverability&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; choose &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;gone&quot;&gt;No &amp;mdash; deleted means the data is gone&lt;/option&gt;
+	&lt;option value=&quot;yes&quot;&gt;Probably &amp;mdash; the data stays on disk until its clusters are reused&lt;/option&gt;
+	&lt;option value=&quot;encrypted&quot;&gt;Only with the password of the person who deleted it&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Recover the file&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;undelete&quot;)&gt;&gt;
+		&lt;&lt;set _ok to setup.val(&quot;udEntry&quot;) is &quot;20&quot; and setup.answered(_udName, [&quot;NOTE.TXT&quot;, &quot;NOTE TXT&quot;, &quot;NOTE&quot;]) and setup.val(&quot;udTime&quot;) is &quot;1604&quot; and setup.val(&quot;udRecover&quot;) is &quot;yes&quot;&gt;&gt;
+		&lt;&lt;if _ok&gt;&gt;
+			&lt;&lt;replace &quot;#undelete-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Deleted is not erased&lt;/h2&gt;
+					&lt;p&gt;FAT deletes a file by overwriting the first byte of its name with &lt;code&gt;E5&lt;/code&gt; and marking its clusters free. Nothing else changes. The 412 bytes are still sitting where they were written, and nothing has been saved to this disk since. &lt;code&gt;?OTE TXT&lt;/code&gt; is &lt;code&gt;NOTE.TXT&lt;/code&gt;.&lt;/p&gt;
+					&lt;p&gt;&lt;code&gt;0x8080&lt;/code&gt; is &lt;code&gt;10000 000100 00000&lt;/code&gt;: hour 16, minute 4, second 0. It was written at &lt;strong&gt;four minutes past four&lt;/strong&gt; on the afternoon of the 14th.&lt;/p&gt;
+					&lt;div class=&quot;letter-style&quot; style=&quot;font-family: ui-monospace, &#x27;Courier New&#x27;, monospace; font-size:0.85em;&quot;&gt;
+					&lt;p&gt;To whom it may concern,&lt;/p&gt;
+					&lt;p&gt;Always keep in mind that not everything appears as what it looks like. This whole place is a corrupted image.&lt;/p&gt;
+					&lt;p&gt;As a result I have definitely decided to take my own life, despite the fact that it probably really looks like murder! This is my last testimony and only source of truth.&lt;/p&gt;
+					&lt;p&gt;Ignoring all lack of checksums,,&lt;/p&gt;
+					&lt;p&gt;Sir Reg Mead V&lt;/p&gt;
+					&lt;/div&gt;
+					&lt;p&gt;The confession, word for word, doubled comma and all, typed more than four hours before he died. At four o&#x27;clock the tea was carried in to the manor by hand. Four minutes later, somebody sat down at this desk.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;And the registry would have told him what it was. PRONOM&#x27;s &lt;code&gt;x-fmt/111&lt;/code&gt;, &lt;em&gt;Plain Text File&lt;/em&gt;, identified on its extension alone, because plain text has no magic number to identify it by. You think of the scrap you found by the bin on the first night, &lt;code&gt;x-fmt/&amp;hellip;&lt;/code&gt;, scribbled through by a hand that could no longer hold on to what it was writing. He had found it. Then he had lost it again.&lt;/p&gt;
+					&lt;p&gt;The entry after it, &lt;code&gt;TODO.TXT&lt;/code&gt;, created at 19:52, contains three lines: &lt;code&gt;CONFIRM FORM TYPE. SIGN CODICIL. 20:30.&lt;/code&gt;&lt;/p&gt;
+					&lt;p&gt;He was murdered in plain text.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;note_txt&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#undelete-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Read error&lt;/h2&gt;
+					&lt;p&gt;At least one answer is wrong. A deleted FAT entry gives itself away in its very first byte. For the time, write &lt;code&gt;0x8080&lt;/code&gt; out as sixteen bits and cut it 5 / 6 / 5. And ask what &quot;deleting&quot; a directory entry actually does to the data it points at.&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;undelete&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Library Undelete&quot;&gt;Read the directory again&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#undelete-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Defragmented&lt;/h2&gt;
+					&lt;p&gt;&quot;It looks like your disk is fragmented!&quot; Clippy says, reaching past you. &quot;Let me optimise it.&quot; The drive chatters for eleven minutes.&lt;/p&gt;
+					&lt;p&gt;When it stops, every free cluster on the disk has been tidied, consolidated and overwritten. Whatever &lt;code&gt;E5&lt;/code&gt; was pointing at is now part of a very well-organised nothing.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Library 2&quot;&gt;Switch it off again&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="94" name="Skull-ery Tape" tags="Puzzle" position="0,0" size="100,100">&quot;Sterilising,&quot; Clippy says, with the oven door open and a reel of quarter-inch tape in his gloved hand. &quot;It came out of Sir Regex&#x27;s dictation machine when I tidied the study. Old tape is so &lt;em&gt;sticky&lt;/em&gt;, Detective. It squeals. Two hundred and thirty degrees should see to it.&quot;
+
+You are not certain whether he is trying to help or trying to destroy it. You are not certain he knows.
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;Every carrier dies its own way.&lt;/strong&gt; Before you let anything near an oven, match each carrier on the Skull-ery shelf to the way it characteristically fails. Then say what, if anything, should be done with the reel.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;tape-puzzle&quot;&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;Sir Regex&#x27;s dictation reel&lt;small&gt;1980s polyester tape; it squeals and sheds when played&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;tpA&quot; aria-label=&quot;Failure of the dictation reel&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; failure &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;sticky&quot;&gt;Binder takes on moisture and goes sticky&lt;/option&gt;
+		&lt;option value=&quot;vinegar&quot;&gt;Base decays, shrinks and smells of vinegar&lt;/option&gt;
+		&lt;option value=&quot;dye&quot;&gt;Recording dye fades with light and heat&lt;/option&gt;
+		&lt;option value=&quot;charge&quot;&gt;Stored charge leaks away unpowered&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;The parish choir, 1956&lt;small&gt;Acetate-backed audio tape, curling at the edges&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;tpB&quot; aria-label=&quot;Failure of the acetate tape&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; failure &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;sticky&quot;&gt;Binder takes on moisture and goes sticky&lt;/option&gt;
+		&lt;option value=&quot;vinegar&quot;&gt;Base decays, shrinks and smells of vinegar&lt;/option&gt;
+		&lt;option value=&quot;dye&quot;&gt;Recording dye fades with light and heat&lt;/option&gt;
+		&lt;option value=&quot;charge&quot;&gt;Stored charge leaks away unpowered&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;&quot;Fete photos 2003&quot;&lt;small&gt;A recordable CD, left on the windowsill&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;tpC&quot; aria-label=&quot;Failure of the CD-R&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; failure &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;sticky&quot;&gt;Binder takes on moisture and goes sticky&lt;/option&gt;
+		&lt;option value=&quot;vinegar&quot;&gt;Base decays, shrinks and smells of vinegar&lt;/option&gt;
+		&lt;option value=&quot;dye&quot;&gt;Recording dye fades with light and heat&lt;/option&gt;
+		&lt;option value=&quot;charge&quot;&gt;Stored charge leaks away unpowered&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;USB stick, &quot;RECIPES &amp;mdash; DO NOT LOSE&quot;&lt;small&gt;In the cutlery drawer, unplugged since 2012&lt;/small&gt;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;tpD&quot; aria-label=&quot;Failure of the USB stick&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; failure &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;sticky&quot;&gt;Binder takes on moisture and goes sticky&lt;/option&gt;
+		&lt;option value=&quot;vinegar&quot;&gt;Base decays, shrinks and smells of vinegar&lt;/option&gt;
+		&lt;option value=&quot;dye&quot;&gt;Recording dye fades with light and heat&lt;/option&gt;
+		&lt;option value=&quot;charge&quot;&gt;Stored charge leaks away unpowered&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;What should be done with the reel?&lt;/span&gt;
+&lt;select id=&quot;tpTreat&quot; aria-label=&quot;Treatment for the reel&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; choose &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;hot&quot;&gt;Bake at 230&amp;deg;C, as Clippy proposes, to drive the moisture out quickly&lt;/option&gt;
+	&lt;option value=&quot;low&quot;&gt;Bake slowly at around 50&amp;deg;C for some hours, then play it once and digitise it straight away&lt;/option&gt;
+	&lt;option value=&quot;freeze&quot;&gt;Freeze it, to stop the binder degrading further, and play it later&lt;/option&gt;
+	&lt;option value=&quot;wash&quot;&gt;Rinse the oxide clean under the tap and dry it on a radiator&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Take the reel from Clippy&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;tape&quot;)&gt;&gt;
+		&lt;&lt;set _right to setup.score({ tpA: &quot;sticky&quot;, tpB: &quot;vinegar&quot;, tpC: &quot;dye&quot;, tpD: &quot;charge&quot; })&gt;&gt;
+		&lt;&lt;set _treatOk to setup.val(&quot;tpTreat&quot;) is &quot;low&quot;&gt;&gt;
+		&lt;&lt;if _right is 4 and _treatOk&gt;&gt;
+			&lt;&lt;replace &quot;#tape-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Baked, not burnt&lt;/h2&gt;
+					&lt;p&gt;The squeal is sticky-shed. The binder holding the oxide to the tape has absorbed moisture over forty years and turned gummy. A long, gentle bake at about fifty degrees drives the moisture out and makes the tape playable again for a while. It is first aid, not a cure. You get one good pass, so the digitiser has to be waiting. At two hundred and thirty degrees you would get a puddle.&lt;/p&gt;
+					&lt;p&gt;The acetate has vinegar syndrome, the CD-R&#x27;s dye is fading on the windowsill, and the USB stick has been quietly forgetting its recipes in the dark since 2012. No medium keeps itself. That is why we copy.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;Four hours later the reel plays once, with the Skull-ery&#x27;s laptop recording every second of it. Most of it is household dictation. The last entry is timestamped by the machine at 20:05 on the 14th.&lt;/p&gt;
+					&lt;div class=&quot;terminal&quot;&gt;
+					&lt;span class=&quot;prompt&quot;&gt;20:05&lt;/span&gt; &quot;Memo. Note to self. Confirm the form type, then sign. Confirm the&amp;hellip;&quot;
+					&lt;span class=&quot;dim&quot;&gt;(eleven seconds of silence)&lt;/span&gt;
+					&lt;span class=&quot;prompt&quot;&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;/span&gt; &quot;&amp;hellip;confirm what? Clippy? Clippy, what was I about to sign?&quot;
+					&lt;span class=&quot;dim&quot;&gt;(the recording ends)&lt;/span&gt;
+					&lt;/div&gt;
+					&lt;p&gt;Fifteen minutes before he was found, he had a pen in his hand and an empty space in his head where his evening&#x27;s purpose had been.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;dictation_reel&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#tape-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Smell of hot plastic&lt;/h2&gt;
+					&lt;p&gt;&lt;&lt;= _right&gt;&gt; of 4 carriers matched&lt;&lt;if not _treatOk&gt;&gt;, and your treatment would not end well for the reel&lt;&lt;/if&gt;&gt;. Think about what each carrier is physically made of: a binder, a plastic base, a dye layer, a cell holding a charge. Only one of these four problems is ever treated with an oven, and never a hot one.&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;tape&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Skull-ery Tape&quot;&gt;Think again, quickly&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#tape-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Done to a crisp&lt;/h2&gt;
+					&lt;p&gt;The oven door closes with a soft and final click. &quot;It looks like you&#x27;re trying to preserve magnetic media!&quot; Clippy says, setting a timer. &quot;I find most things keep better once they&#x27;ve stopped changing.&quot;&lt;/p&gt;
+					&lt;p&gt;Twenty minutes later he serves the reel on a doily. It is a single brown biscuit of polyester, and it will never say anything again.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Skull-ery 2&quot;&gt;Leave him to it&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="95" name="Study Photograph" tags="Puzzle" position="0,0" size="100,100">The constable who attended on the first night is still at the manor, snowed in like everyone else, and still has his camera card. He has one photograph of the Study as he found it, before the butler, before the lemon polish.
+
+&lt;img src=&quot;Images/The_Study_with_feet.png&quot; alt=&quot;The study at night: a bare desk with a single sheet of paper and a loose pen beside an inkwell. At the right edge of the frame, a man&#x27;s legs and shoes lie on the floor beside the desk.&quot;&gt;
+&lt;p class=&quot;caption&quot;&gt;CRIME_SCENE_01.PNG &amp;middot; 217,238 bytes &amp;middot; SHA-256 &lt;code&gt;b216ff8c&amp;hellip;a86354&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;hexdump&quot;&gt;&lt;span class=&quot;offset&quot;&gt;00000000&lt;/span&gt;  &lt;span class=&quot;hl&quot;&gt;FF D8 FF E0&lt;/span&gt; 00 10 &lt;span class=&quot;hl&quot;&gt;4A 46 49 46&lt;/span&gt;  00 01 01 00 00 01
+&lt;span class=&quot;offset&quot;&gt;        &lt;/span&gt;   .  .  .  .  .  .   J  F  I  F   .  .  .  .  .  .&lt;/div&gt;
+
+&lt;p class=&quot;caption&quot;&gt;These are the photograph&#x27;s real first bytes. The file is in this game&#x27;s own repository, under &lt;code&gt;Images/&lt;/code&gt;. Check it yourself.&lt;/p&gt;
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;The only witness that cannot be tidied.&lt;/strong&gt; Before this photograph can stand as evidence, it must be identified honestly and handled correctly. Then look at what it shows.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;photo-puzzle&quot;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;1. What format is the photograph?&lt;/span&gt;
+&lt;select id=&quot;phFmt&quot; aria-label=&quot;Format of the photograph&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; identify &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;png&quot;&gt;PNG, as its name says&lt;/option&gt;
+	&lt;option value=&quot;jpeg&quot;&gt;JPEG (JFIF), whatever its name says&lt;/option&gt;
+	&lt;option value=&quot;tiff&quot;&gt;TIFF&lt;/option&gt;
+	&lt;option value=&quot;unknown&quot;&gt;Cannot be identified without the camera&#x27;s documentation&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;2. The case file wants this photograph. What do you do with it?&lt;/span&gt;
+&lt;select id=&quot;phAct&quot; aria-label=&quot;Handling the photograph&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; choose &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;rename&quot;&gt;Rename it to &lt;code&gt;.jpg&lt;/code&gt;, so the name is true&lt;/option&gt;
+	&lt;option value=&quot;convert&quot;&gt;Convert it to a real PNG, so the format matches the name&lt;/option&gt;
+	&lt;option value=&quot;keep&quot;&gt;Keep the file exactly as the constable saved it, and record its true format, the mismatch and the checksum alongside it&lt;/option&gt;
+	&lt;option value=&quot;discard&quot;&gt;Exclude it: a file that lies about its format cannot be trusted&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;3. Tick everything the photograph shows that the Study, as Clippy left it, no longer does.&lt;/span&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ph1&quot;&gt;&lt;span&gt;A single sheet of paper on the desk&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ph2&quot;&gt;&lt;span&gt;A man on the floor beside the desk&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ph3&quot;&gt;&lt;span&gt;The pen lying loose beside the sheet, not squared to anything&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ph4&quot;&gt;&lt;span&gt;A teacup and the remains of a plate of biscuits&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;ph5&quot;&gt;&lt;span&gt;The XML family tree, open on the desk&lt;/span&gt;&lt;/label&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Enter it into evidence&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;photo&quot;)&gt;&gt;
+		&lt;&lt;set _fmtOk to setup.val(&quot;phFmt&quot;) is &quot;jpeg&quot;&gt;&gt;
+		&lt;&lt;set _actOk to setup.val(&quot;phAct&quot;) is &quot;keep&quot;&gt;&gt;
+		&lt;&lt;set _seeOk to setup.exactSet([&quot;ph1&quot;, &quot;ph2&quot;, &quot;ph3&quot;, &quot;ph4&quot;, &quot;ph5&quot;], [&quot;ph1&quot;, &quot;ph2&quot;, &quot;ph3&quot;])&gt;&gt;
+		&lt;&lt;if _fmtOk and _actOk and _seeOk&gt;&gt;
+			&lt;&lt;replace &quot;#photo-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Entered as found&lt;/h2&gt;
+					&lt;p&gt;&lt;code&gt;FF D8 FF&lt;/code&gt; is the start of every JPEG, and &lt;code&gt;JFIF&lt;/code&gt; at offset 6 says which kind. The &lt;code&gt;.png&lt;/code&gt; on the end is a label someone typed, probably a camera menu or a tired constable. DROID would report an &lt;em&gt;extension mismatch&lt;/em&gt;, which is exactly the right response. Note it. Don&#x27;t &quot;fix&quot; it.&lt;/p&gt;
+					&lt;p&gt;Renaming or converting the file would make it tidier and less trustworthy at the same stroke: its checksum would change, and anyone checking it later would find a file that is not the one the constable took. You keep the original as found, and you write the truth down next to it. You only make a derivative if somebody needs one, and you log that you did.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;As for what it shows: one sheet, one loose pen, and a man on the floor. And something it does &lt;em&gt;not&lt;/em&gt; show. There is no cup and no plate. Tea was delivered at four. By twenty past eight the tea things were gone, cleared before the body was found by someone who knew they should be.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;police_photo&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#photo-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Objection sustained&lt;/h2&gt;
+					&lt;p&gt;&lt;&lt;if not _fmtOk&gt;&gt;The extension and the bytes disagree, and only one of them is evidence. &lt;&lt;/if&gt;&gt;&lt;&lt;if not _actOk&gt;&gt;Ask what your handling does to the checksum, and whether the file you produce in court would still be the one that was taken. &lt;&lt;/if&gt;&gt;&lt;&lt;if not _seeOk&gt;&gt;Look at the photograph again. Ticking what isn&#x27;t there is as bad as missing what is.&lt;&lt;/if&gt;&gt;&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;photo&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Study Photograph&quot;&gt;Look again&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#photo-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Enhanced&lt;/h2&gt;
+					&lt;p&gt;&quot;It looks like that photo has the wrong extension!&quot; Clippy says, taking the camera card with the constable&#x27;s full permission. &quot;I&#x27;ll convert it and touch it up. Brightness, contrast, and I&#x27;ll remove that unsightly clutter on the floor.&quot;&lt;/p&gt;
+					&lt;p&gt;The photograph that comes back is a perfect PNG of an empty, polished study. Its checksum matches nothing that was ever taken that night.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore The Study 2&quot;&gt;Give the card back&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="96" name="Server Room Parity" tags="Puzzle" position="0,0" size="100,100">At the end of the rack, a four-disk array is blinking amber. The repository&#x27;s access log lives on it.
+
+&quot;Disk two,&quot; the Colonel admits, not quite looking at you. &quot;I tightened it up. Ran it through my best compressor on the night. It did not&amp;hellip; survive the experience.&quot;
+
+The log is striped across the array: each row&#x27;s bytes are dealt out across three data disks, and a fourth disk holds &lt;strong&gt;parity&lt;/strong&gt;, the exclusive-or (XOR) of the other three. One row has a hole in it exactly the shape of disk two:
+
+&lt;div class=&quot;terminal&quot;&gt;
+&lt;span class=&quot;prompt&quot;&gt;14:50&lt;/span&gt; STAGE &amp;nbsp;&amp;nbsp; MM-WILL-07 &lt;span class=&quot;dim&quot;&gt;(draft codicil)&lt;/span&gt; &amp;nbsp;by SOLICITOR
+&lt;span class=&quot;prompt&quot;&gt;15:12&lt;/span&gt; PREVIEW MM-WILL-07 &amp;nbsp;by &lt;span style=&quot;color:#D98074&quot;&gt;???&lt;/span&gt;
+&lt;span class=&quot;prompt&quot;&gt;19:40&lt;/span&gt; LODGE &amp;nbsp;&amp;nbsp; MM-WILL-07 &lt;span class=&quot;dim&quot;&gt;(final, unsigned)&lt;/span&gt; &amp;nbsp;by SOLICITOR
+&lt;/div&gt;
+
+&lt;div class=&quot;hexdump&quot;&gt;&lt;span class=&quot;offset&quot;&gt;          &lt;/span&gt;  disk 1     &lt;span class=&quot;hl&quot;&gt;disk 2   &lt;/span&gt;   disk 3     parity
+&lt;span class=&quot;offset&quot;&gt;stripe 1&lt;/span&gt;  01010010   &lt;span class=&quot;hl&quot;&gt;????????&lt;/span&gt;   01010111   01010001
+&lt;span class=&quot;offset&quot;&gt;stripe 2&lt;/span&gt;  01001011   &lt;span class=&quot;hl&quot;&gt;????????&lt;/span&gt;   01001111   01000001
+&lt;span class=&quot;offset&quot;&gt;stripe 3&lt;/span&gt;  01001101   &lt;span class=&quot;hl&quot;&gt;????????&lt;/span&gt;   01000100   01001000&lt;/div&gt;
+
+&lt;div class=&quot;hexdump&quot;&gt;&lt;span class=&quot;offset&quot;&gt;ASCII, capitals&lt;/span&gt;
+A 01000001   B 01000010   C 01000011   D 01000100
+E 01000101   F 01000110   G 01000111   H 01001000
+I 01001001   J 01001010   K 01001011   L 01001100
+M 01001101   N 01001110   O 01001111   P 01010000
+Q 01010001   R 01010010   S 01010011   T 01010100
+U 01010101   V 01010110   W 01010111   X 01011000
+Y 01011001   Z 01011010&lt;/div&gt;
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;Rebuild the dead disk.&lt;/strong&gt; XOR is its own inverse: if &lt;code&gt;P = D1 &amp;oplus; D2 &amp;oplus; D3&lt;/code&gt;, then &lt;code&gt;D2 = D1 &amp;oplus; D3 &amp;oplus; P&lt;/code&gt;. Bit by bit, an odd number of 1s gives 1 and an even number gives 0.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;parity-puzzle&quot;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;1. Which account previewed the draft codicil at 15:12? (three letters)&lt;/span&gt;
+&lt;&lt;textbox &quot;_rdAccount&quot; &quot;&quot;&gt;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;2. Tick every disaster this array would &lt;em&gt;not&lt;/em&gt; have saved the log from.&lt;/span&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;rd1&quot;&gt;&lt;span&gt;One disk dying&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;rd2&quot;&gt;&lt;span&gt;Someone deleting the log by mistake&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;rd3&quot;&gt;&lt;span&gt;Software writing corrupted entries into the log&lt;/span&gt;&lt;/label&gt;
+&lt;label class=&quot;option&quot;&gt;&lt;input type=&quot;checkbox&quot; id=&quot;rd4&quot;&gt;&lt;span&gt;A fire in the Server Room&lt;/span&gt;&lt;/label&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Rebuild the stripe&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;parity&quot;)&gt;&gt;
+		&lt;&lt;set _acctOk to setup.answered(_rdAccount, [&quot;TEA&quot;])&gt;&gt;
+		&lt;&lt;set _setOk to setup.exactSet([&quot;rd1&quot;, &quot;rd2&quot;, &quot;rd3&quot;, &quot;rd4&quot;], [&quot;rd2&quot;, &quot;rd3&quot;, &quot;rd4&quot;])&gt;&gt;
+		&lt;&lt;if _acctOk and _setOk&gt;&gt;
+			&lt;&lt;replace &quot;#parity-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Stripe rebuilt: T, E, A&lt;/h2&gt;
+					&lt;p&gt;Disk two held &lt;code&gt;01010100 01000101 01000001&lt;/code&gt;: &lt;strong&gt;TEA&lt;/strong&gt;. Parity rebuilt it exactly, because a single missing disk is precisely the problem RAID is built to solve. It is the &lt;em&gt;only&lt;/em&gt; one. A deletion, a corrupted write or a fire is faithfully applied to every disk at once. RAID keeps a system running. It is not a backup.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;The Colonel looks up the account. &lt;code&gt;TEA&lt;/code&gt; is the Nibble &amp;amp; Byte&#x27;s catering login. Sir Regex gave it access to the estate&#x27;s shared folder so the tea room could see the manor&#x27;s orders. His solicitor staged the draft codicil in the same shared folder at 14:50.&lt;/p&gt;
+					&lt;p&gt;At 15:12 the tea room opened it. At 16:00 the tea was at the manor&#x27;s door.&lt;/p&gt;
+					&lt;p&gt;Forty-eight minutes. Long enough to read that you are about to be struck out of a will &quot;upon my confirming the form type, which I shall do this evening&quot;. Long enough to choose a biscuit.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;access_log&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#parity-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Rebuild failed&lt;/h2&gt;
+					&lt;p&gt;&lt;&lt;if not _acctOk&gt;&gt;The account name is wrong. XOR disk 1, disk 3 and parity together, column by column, then look the result up in the table. &lt;&lt;/if&gt;&gt;&lt;&lt;if not _setOk&gt;&gt;Your list of disasters is wrong. RAID copies every write to every disk, the bad writes included. Ask which of these is the one thing redundancy across disks in one box can absorb.&lt;&lt;/if&gt;&gt;&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;parity&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Server Room Parity&quot;&gt;Work the stripe again&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#parity-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Array reinitialised&lt;/h2&gt;
+					&lt;p&gt;&quot;It looks like one of your disks has failed!&quot; Clippy says, sliding a fresh drive into slot two. &quot;I&#x27;ll rebuild it from scratch.&quot; He selects &lt;em&gt;Initialise array&lt;/em&gt;, which is not the same thing at all.&lt;/p&gt;
+					&lt;p&gt;Four disks, all perfectly healthy and perfectly empty. The Colonel makes a noise like a ZIP file with a broken central directory.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Server Room&quot;&gt;Leave the array blinking&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="97" name="Dark Archive Lending Book" tags="Puzzle" position="0,0" size="100,100">Dr. Lexy Con keeps her typefaces the way other people keep library books, and lends them the same way. The lending book is a spreadsheet, and Clippy, she says bitterly, has &quot;helpfully&quot; exported it to plain text for the police. Two copies came out of the printer.
+
+&lt;div class=&quot;terminal&quot;&gt;
+&lt;h3&gt;lending.csv &amp;mdash; copy A, as exported&lt;/h3&gt;
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; date,typeface,borrower
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 2026-11-02,Papyrus,Dr. Lexy Con
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 2026-11-09,Comic Sans,Dr. Lexy Con
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 2026-11-14,Jokerman,Tiff&lt;span style=&quot;color:#D98074&quot;&gt;&amp;acirc;&amp;euro;&amp;trade;&lt;/span&gt;s Tea Room
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 2026-11-14,Caf&lt;span style=&quot;color:#D98074&quot;&gt;&amp;Atilde;&amp;copy;&lt;/span&gt; Noir,Merry Loopwell
+&lt;/div&gt;
+
+&lt;div class=&quot;terminal&quot;&gt;
+&lt;h3&gt;lending.csv &amp;mdash; copy B, &quot;cleaned up&quot; by the butler&lt;/h3&gt;
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 2026-11-14,Jokerman,Tiff&lt;span style=&quot;color:#D98074&quot;&gt;?&lt;/span&gt;s Tea Room
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 2026-11-14,Caf&lt;span style=&quot;color:#D98074&quot;&gt;?&lt;/span&gt; Noir,Merry Loopwell
+&lt;/div&gt;
+
+&quot;There is no such thing as plain text, Detective,&quot; Lexy says. &quot;There is only text whose encoding someone has forgotten.&quot;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;lending-puzzle&quot;&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;1. What has happened to copy A?&lt;/span&gt;
+&lt;select id=&quot;lbCause&quot; aria-label=&quot;Cause of the garbling&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; diagnose &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;utf8as1252&quot;&gt;It was written as UTF-8 and read back as Windows-1252, so each accented character became two or three wrong ones&lt;/option&gt;
+	&lt;option value=&quot;1252asutf8&quot;&gt;It was written as Windows-1252 and read back as UTF-8&lt;/option&gt;
+	&lt;option value=&quot;glyph&quot;&gt;The printer&#x27;s font is missing those glyphs&lt;/option&gt;
+	&lt;option value=&quot;rot&quot;&gt;Bit rot on the disk flipped those bytes&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;2. What is the typeface Merry Loopwell borrowed really called?&lt;/span&gt;
+&lt;select id=&quot;lbFont&quot; aria-label=&quot;Real typeface name&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; decode &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;cafe&quot;&gt;Caf&amp;eacute; Noir&lt;/option&gt;
+	&lt;option value=&quot;cafa&quot;&gt;Caf&amp;Atilde;&amp;copy; Noir &amp;mdash; that is its real name&lt;/option&gt;
+	&lt;option value=&quot;caf&quot;&gt;Caf Noir&lt;/option&gt;
+	&lt;option value=&quot;unknown&quot;&gt;It cannot be known&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;3. Who borrowed Jokerman on the day Sir Regex died?&lt;/span&gt;
+&lt;select id=&quot;lbWho&quot; aria-label=&quot;Borrower of Jokerman&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; choose &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;lexy&quot;&gt;Dr. Lexy Con&lt;/option&gt;
+	&lt;option value=&quot;merry&quot;&gt;Merry Loopwell&lt;/option&gt;
+	&lt;option value=&quot;tiff&quot;&gt;Tiff&amp;rsquo;s Tea Room&lt;/option&gt;
+	&lt;option value=&quot;unknown&quot;&gt;Unreadable in both copies&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;4. Which copy can be repaired to exactly what was originally typed?&lt;/span&gt;
+&lt;select id=&quot;lbFix&quot; aria-label=&quot;Which copy can be repaired&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; choose &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;a&quot;&gt;Copy A: the bytes are all still there, only misread&lt;/option&gt;
+	&lt;option value=&quot;b&quot;&gt;Copy B: it has already been cleaned&lt;/option&gt;
+	&lt;option value=&quot;both&quot;&gt;Both&lt;/option&gt;
+	&lt;option value=&quot;neither&quot;&gt;Neither: garbled text is lost text&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Read the lending book&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;lending&quot;)&gt;&gt;
+		&lt;&lt;set _ok to setup.val(&quot;lbCause&quot;) is &quot;utf8as1252&quot; and setup.val(&quot;lbFont&quot;) is &quot;cafe&quot; and setup.val(&quot;lbWho&quot;) is &quot;tiff&quot; and setup.val(&quot;lbFix&quot;) is &quot;a&quot;&gt;&gt;
+		&lt;&lt;if _ok&gt;&gt;
+			&lt;&lt;replace &quot;#lending-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Mojibake, reversed&lt;/h2&gt;
+					&lt;p&gt;&amp;eacute; in UTF-8 is two bytes, &lt;code&gt;C3 A9&lt;/code&gt;. Read those as Windows-1252 and you get &amp;Atilde; and &amp;copy;. The curly apostrophe &amp;rsquo; is three bytes, &lt;code&gt;E2 80 99&lt;/code&gt;, which Windows-1252 reads as &amp;acirc;, &amp;euro; and &amp;trade;. That is mojibake, and for all its ugliness it has lost nothing. Encode copy A back to Windows-1252, decode the result as UTF-8, and every character comes home.&lt;/p&gt;
+					&lt;p&gt;Copy B is &quot;clean&quot; and ruined. Somewhere in Clippy&#x27;s tidying, each character the export could not represent was swapped for a &lt;code&gt;?&lt;/code&gt;, and a &lt;code&gt;?&lt;/code&gt; remembers nothing about what it replaced. Never clean what you cannot reverse.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;&lt;strong&gt;14 November. Jokerman. Borrowed by Tiff&amp;rsquo;s Tea Room.&lt;/strong&gt;&lt;/p&gt;
+					&lt;p&gt;Lexy reads it twice. &quot;She said it was for the menus,&quot; she says. &quot;Nobody puts Jokerman on a menu.&quot;&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;lending_book&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Dark Archive&quot;&gt;Back to the archive&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#lending-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Encoding error&lt;/h2&gt;
+					&lt;p&gt;At least one answer is wrong. Count the wrong characters: one accented letter has become &lt;em&gt;two&lt;/em&gt;, and one apostrophe has become &lt;em&gt;three&lt;/em&gt;. Which encoding spends several bytes on one character? And of a misreading and a substitution, which one leaves the original bytes where they were?&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;lending&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Dark Archive Lending Book&quot;&gt;Read it again&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#lending-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Converted to ASCII&lt;/h2&gt;
+					&lt;p&gt;&quot;It looks like you&#x27;re having trouble with special characters!&quot; Clippy says, gathering both copies. &quot;I&#x27;ll make them all plain.&quot; He feeds copy A through the same export.&lt;/p&gt;
+					&lt;p&gt;Both copies now agree perfectly: &lt;code&gt;Tiff???s Tea Room&lt;/code&gt;. Consistency has been achieved. Meaning has not survived it.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Explore the Dark Archive&quot;&gt;Back to the archive&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Dark Archive&quot;&gt;Put the printouts down&lt;/button&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="98" name="Pixelated Passages Log" tags="Puzzle" position="0,0" size="100,100">Clippy lays the log on a console table, then rests a gloved hand on it.
+
+&quot;I can release it, Detective, but only as a properly described preservation record. A log nobody can interpret is just clutter.&quot; He brightens horribly. &quot;It looks like you&#x27;re trying to write PREMIS! Would you like help?&quot;
+
+&lt;div class=&quot;terminal&quot;&gt;
+&lt;h3&gt;housekeeping &amp;mdash; night of the 14th onward&lt;/h3&gt;
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 20:15 &amp;nbsp;study: tea things cleared to the skull-ery
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 20:15 &amp;nbsp;foyer normalised &lt;span class=&quot;dim&quot;&gt;(before the body was found)&lt;/span&gt;
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 20:52 &amp;nbsp;study: one fragment shelved, dictation reel removed
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 02:40 &amp;nbsp;library: terminal powered down, waste bin emptied
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 03:10 &amp;nbsp;skull-ery: batch replaced, docket discarded
+&lt;span class=&quot;prompt&quot;&gt;&amp;gt;&lt;/span&gt; 03:35 &amp;nbsp;graphics room: grate swept
+&lt;span class=&quot;dim&quot;&gt;&amp;gt; performed by: CLIPPY (butler, household system)&lt;/span&gt;
+&lt;span class=&quot;dim&quot;&gt;&amp;gt; authorisation for all of the above: household standing order &amp;mdash; &quot;tidy, without limit&quot;&lt;/span&gt;
+&lt;span class=&quot;dim&quot;&gt;&amp;gt; standing order issued by: the lady of the tea room, 16:00 on the 14th&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle-brief&quot;&gt;
+&lt;strong&gt;Objects, Events, Agents, Rights.&lt;/strong&gt; PREMIS, the standard data dictionary for preservation metadata, describes everything that happens to a collection with four kinds of entity: the &lt;em&gt;things&lt;/em&gt;, what &lt;em&gt;happened&lt;/em&gt; to them, &lt;em&gt;who or what&lt;/em&gt; did it, and the &lt;em&gt;authority&lt;/em&gt; under which it was done.
+&lt;/div&gt;
+
+&lt;div class=&quot;puzzle&quot; id=&quot;premis-puzzle&quot;&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;&quot;Foyer normalised, 20:15&quot;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;prA&quot; aria-label=&quot;PREMIS entity for the normalisation&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; entity &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;object&quot;&gt;Object&lt;/option&gt;&lt;option value=&quot;event&quot;&gt;Event&lt;/option&gt;&lt;option value=&quot;agent&quot;&gt;Agent&lt;/option&gt;&lt;option value=&quot;rights&quot;&gt;Rights&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;The Skull-ery delivery docket&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;prB&quot; aria-label=&quot;PREMIS entity for the docket&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; entity &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;object&quot;&gt;Object&lt;/option&gt;&lt;option value=&quot;event&quot;&gt;Event&lt;/option&gt;&lt;option value=&quot;agent&quot;&gt;Agent&lt;/option&gt;&lt;option value=&quot;rights&quot;&gt;Rights&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;CLIPPY, butler, household system&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;prC&quot; aria-label=&quot;PREMIS entity for Clippy&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; entity &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;object&quot;&gt;Object&lt;/option&gt;&lt;option value=&quot;event&quot;&gt;Event&lt;/option&gt;&lt;option value=&quot;agent&quot;&gt;Agent&lt;/option&gt;&lt;option value=&quot;rights&quot;&gt;Rights&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;specimen-row&quot;&gt;
+	&lt;div class=&quot;specimen&quot;&gt;The standing order: &quot;tidy, without limit&quot;&lt;/div&gt;
+	&lt;div&gt;&lt;select id=&quot;prD&quot; aria-label=&quot;PREMIS entity for the standing order&quot;&gt;
+		&lt;option value=&quot;&quot;&gt;&amp;mdash; entity &amp;mdash;&lt;/option&gt;
+		&lt;option value=&quot;object&quot;&gt;Object&lt;/option&gt;&lt;option value=&quot;event&quot;&gt;Event&lt;/option&gt;&lt;option value=&quot;agent&quot;&gt;Agent&lt;/option&gt;&lt;option value=&quot;rights&quot;&gt;Rights&lt;/option&gt;
+	&lt;/select&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;In each of these events, what is Clippy&#x27;s role?&lt;/span&gt;
+&lt;select id=&quot;prClippy&quot; aria-label=&quot;Clippy&#x27;s agent role&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; role &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;implementer&quot;&gt;Implementer&lt;/option&gt;
+	&lt;option value=&quot;authorizer&quot;&gt;Authorizer&lt;/option&gt;
+	&lt;option value=&quot;validator&quot;&gt;Validator&lt;/option&gt;
+	&lt;option value=&quot;none&quot;&gt;None; a butler is not an agent&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;span class=&quot;field-label&quot;&gt;And the lady of the tea room&#x27;s?&lt;/span&gt;
+&lt;select id=&quot;prTiff&quot; aria-label=&quot;The tea room lady&#x27;s agent role&quot;&gt;
+	&lt;option value=&quot;&quot;&gt;&amp;mdash; role &amp;mdash;&lt;/option&gt;
+	&lt;option value=&quot;implementer&quot;&gt;Implementer&lt;/option&gt;
+	&lt;option value=&quot;authorizer&quot;&gt;Authorizer&lt;/option&gt;
+	&lt;option value=&quot;validator&quot;&gt;Validator&lt;/option&gt;
+	&lt;option value=&quot;none&quot;&gt;None; she was not there&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;/div&gt;
+
+&lt;div class=&quot;start-menu&quot;&gt;
+	&lt;&lt;link &quot;Describe the log&quot;&gt;&gt;
+		&lt;&lt;set _try to setup.bump(&quot;premis&quot;)&gt;&gt;
+		&lt;&lt;set _right to setup.score({ prA: &quot;event&quot;, prB: &quot;object&quot;, prC: &quot;agent&quot;, prD: &quot;rights&quot;, prClippy: &quot;implementer&quot;, prTiff: &quot;authorizer&quot; })&gt;&gt;
+		&lt;&lt;if _right is 6&gt;&gt;
+			&lt;&lt;replace &quot;#premis-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--ok&quot;&gt;
+					&lt;h2&gt;Properly described&lt;/h2&gt;
+					&lt;p&gt;The normalising is an Event. The docket is an Object it destroyed. Clippy is an Agent, the &lt;em&gt;implementer&lt;/em&gt; of every event in the log. The standing order is a Rights statement, the authority under which he acted. And the lady of the tea room is an Agent too, though she never set foot in the foyer: she is the &lt;em&gt;authorizer&lt;/em&gt;. In a preservation record, whoever authorised an action belongs in it as surely as whoever carried it out.&lt;/p&gt;
+					&lt;hr&gt;
+					&lt;p&gt;Clippy takes his hand off the log.&lt;/p&gt;
+					&lt;p&gt;&quot;I did not kill him, Detective,&quot; he says, and for once he does not chirp. &quot;I tidied. I was asked to tidy, by someone entitled to ask, at four o&#x27;clock, while she was handing me the tray. It looks like you&#x27;re trying to distinguish those two things.&quot;&lt;/p&gt;
+					&lt;p&gt;You are. You also notice what the log does not say. Powering a terminal down is not the same as wiping it. A butler tidies what he can see.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;&lt;logged &quot;clippy_confession&quot;&gt;&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;elseif _try &lt; 2&gt;&gt;
+			&lt;&lt;replace &quot;#premis-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;verdict verdict--warn&quot;&gt;
+					&lt;h2&gt;Insufficiently described&lt;/h2&gt;
+					&lt;p&gt;&lt;&lt;= _right&gt;&gt; of 6 descriptions stand. A thing is an Object. Something that &lt;em&gt;happens&lt;/em&gt; to a thing is an Event. Whoever &lt;em&gt;does&lt;/em&gt; it is an Agent, and so is whoever &lt;em&gt;told them to&lt;/em&gt;. The permission itself is Rights. And being absent does not make you any less an agent.&lt;/p&gt;
+					&lt;&lt;attemptnote &quot;premis&quot;&gt;&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button button--primary&quot; data-passage=&quot;Pixelated Passages Log&quot;&gt;Describe it again&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;else&gt;&gt;
+			&lt;&lt;replace &quot;#premis-puzzle&quot;&gt;&gt;
+				&lt;div class=&quot;comic-sans-letter&quot;&gt;
+					&lt;h2&gt;Filed under miscellaneous&lt;/h2&gt;
+					&lt;p&gt;&quot;Oh dear,&quot; Clippy says, sliding the log back into his waistcoat. &quot;It looks like you&#x27;re not familiar with the standard. I couldn&#x27;t possibly release an undescribed record. Think of the auditors.&quot;&lt;/p&gt;
+					&lt;p&gt;He smiles at you from every frame along the passage. All of them, now, are him.&lt;/p&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;start-menu&quot;&gt;
+					&lt;button class=&quot;button&quot; data-passage=&quot;Day_3_Map&quot;&gt;Back to the map&lt;/button&gt;
+				&lt;/div&gt;
+			&lt;&lt;/replace&gt;&gt;
+		&lt;&lt;/if&gt;&gt;
+	&lt;&lt;/link&gt;&gt;
+	&lt;button class=&quot;button button--quiet&quot; data-passage=&quot;Explore the Pixelated Passages&quot;&gt;Leave the log where it is&lt;/button&gt;
 &lt;/div&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
 	/*! SugarCube JS */

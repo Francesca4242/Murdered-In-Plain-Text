@@ -38,77 +38,117 @@ Murdered In Plain Text
  * ------------------------------------------------------------------ */
 
 /* The evidence ledger. Each entry is one provable fact about the case.
-   `keystone` marks the three items the accusation cannot be proven without. */
+   `keystone` marks the three items the accusation cannot be proven without.
+   `lesson` and `link` feed the Preservationist's Notebook: what each puzzle
+   was actually teaching, and where to read more. */
 setup.evidence = [
 	{
 		id: "forged_note",
 		day: 1,
 		where: "The Study",
 		title: "The Jokerman note",
-		note: "A confession typeset in a font Sir Regex outlawed, signed with a name that fails validation and carrying no checksum. Not a suicide note. A forgery."
+		note: "A confession typeset in a font Sir Regex outlawed, signed with a name that fails validation and carrying no checksum. Not a suicide note. A forgery.",
+		lesson: "Authentication tests a record against independent evidence: authority files, known practice, fixity. Oddness is not forgery. A typo is not a provenance failure. Write down only the things that genuinely contradict what you can check.",
+		link: { text: "DPC Handbook: authenticity and integrity", url: "https://www.dpconline.org/handbook" }
 	},
 	{
 		id: "family_tree",
 		day: 1,
 		where: "The Study",
 		title: "The XML lineage fragment",
-		note: "Sir Regex's family recorded as a schema: one son DISOWNED, one niece flagged INVALID with <code>format=\"WebP\"</code>. He had already identified her."
+		note: "Sir Regex's family recorded as a schema: one son DISOWNED, one niece declared <code>format=\"TIFF\"</code> and flagged MISMATCH on four bytes of a RIFF header. He was halfway through identifying her when he died. His working draft of the same schema, written that evening, wanders: tags left open, and his own name entered in the place of his son's.",
+		lesson: "Validation compares what something declares against what it is observed to be. A declared format is metadata. Only the bytes are evidence.",
+		link: { text: "W3C: Extensible Markup Language (XML) 1.0", url: "https://www.w3.org/TR/xml/" }
 	},
 	{
 		id: "signature_ledger",
 		day: 1,
 		where: "The Library",
 		title: "The signature ledger",
-		note: "Sir Regex was byte-level identifying his own household. The final row is a sample taken from his niece's certificate of authenticity."
+		note: "Sir Regex was byte-level identifying his own household. The final row is a sample taken from his niece's certificate of authenticity.",
+		lesson: "Magic numbers identify formats, but a container signature such as RIFF or ZIP only names the wrapper. RIFF declares its form type at offset 8 (WAVE, AVI, WEBP). ZIP-based formats such as DOCX, EPUB and ODT need container signatures that look inside.",
+		link: { text: "The National Archives: PRONOM registry", url: "https://www.nationalarchives.gov.uk/PRONOM/" }
 	},
 	{
 		id: "lossy_tag",
 		day: 1,
 		where: "The Graphics Room",
 		title: "The torn integrity tag",
-		note: "A certificate tag claiming LOSSLESS - PROVENANCE VERIFIED, printed so badly the claim itself is full of compression artefacts. Torn from something."
+		note: "A certificate tag claiming LOSSLESS - PROVENANCE VERIFIED, printed so badly the claim itself is full of compression artefacts. Torn from something.",
+		lesson: "Losslessness belongs to the whole migration chain, not to the last step. Re-wrapping a JPEG as PNG or TIFF keeps the damage perfectly. Record every transformation as an event, so whoever comes next can see where fidelity was lost.",
+		link: { text: "DPC Handbook: file formats and standards", url: "https://www.dpconline.org/handbook" }
 	},
 	{
 		id: "tampered_batch",
 		day: 1,
 		where: "The Skull-ery",
 		title: "The broken fixity check",
-		note: "One biscuit in the tearoom batch no longer matches its published manifest. Its contents were altered after delivery."
+		note: "One biscuit in the tearoom batch no longer matches its published manifest. Its contents were altered after delivery.",
+		lesson: "Fixity checks have three outcomes, not two: verified, failed, and cannot compare. You cannot compare an MD5 with a SHA-256, and a missing digest proves nothing at all. Never report an \"unknown\" as a pass.",
+		link: { text: "NDSA Levels of Digital Preservation", url: "https://ndsa.org/publications/levels-of-digital-preservation/" }
 	},
 	{
 		id: "ipres_flyer",
 		day: 2,
 		where: "St. Mary of the Lossless",
 		title: "The iPres festival plan",
-		note: "Vicar Vector saw a murder as a publicity event. A motive - but a planner's motive, not a poisoner's."
+		note: "Vicar Vector saw a murder as a publicity event. A motive - but a planner's motive, not a poisoner's.",
+		lesson: "A migration is judged by what it loses. Converting SVG to PNG keeps appearance and transparency at the target size. It loses scalability, live text and editable geometry. Never count a property the source never had.",
+		link: { text: "W3C: Scalable Vector Graphics", url: "https://www.w3.org/Graphics/SVG/" }
+	},
+	{
+		id: "web_capture",
+		day: 2,
+		where: "St. Mary of the Lossless",
+		title: "The festival page, re-dated",
+		note: "The archived festival page that 'announced' Sir Regex's death before it happened. The page was captured at 18:32 on the 14th. The memorial banner was captured two days later and stitched in by the replay. The Vicar had no foreknowledge.",
+		lesson: "An archived web page is rebuilt at replay time from many captures. Each embedded resource has its own timestamp, and a replay tool will fill gaps with the nearest capture it has, earlier or later. Check every resource's datetime before you testify to what a page \"said\" on a given day.",
+		link: { text: "RFC 7089: Memento, time travel for the web", url: "https://www.rfc-editor.org/rfc/rfc7089" }
 	},
 	{
 		id: "font_list",
 		day: 2,
 		where: "The .PUB",
 		title: "The forbidden font list",
-		note: "Colonel Win-ZIP compiled Sir Regex's banned typefaces and kept them for 'future publications'. Whoever set the note in Jokerman had this list."
+		note: "Colonel Win-ZIP compiled Sir Regex's banned typefaces and kept them for 'future publications'. Whoever set the note in Jokerman had this list.",
+		lesson: "Well-formed and valid are different tests. A parser rejects single-quoted keys and trailing commas. Only a schema or a rule catches month 13 or a null digest. Numbers, null and key order are all perfectly legal JSON.",
+		link: { text: "RFC 8259: The JSON data interchange format", url: "https://www.rfc-editor.org/rfc/rfc8259" }
 	},
 	{
 		id: "love_letter",
 		day: 2,
 		where: "The Post Office",
 		title: "The M.P.G. letter and birth record",
-		note: "A secret affair, and a birth certificate naming Sir Regex as Jay Son Jnr.'s father. Motive enough for two suspects."
+		note: "A secret affair, and a birth certificate naming Sir Regex as Jay Son Jnr.'s father. Motive enough for two suspects.",
+		lesson: "OAIS: a SIP is received, checked and turned into an AIP, stored and monitored, and only then served as a DIP. Fixity is recorded on receipt and re-checked for as long as the thing is kept.",
+		link: { text: "CCSDS 650.0: the OAIS reference model", url: "https://public.ccsds.org/Pubs/650x0m2.pdf" }
+	},
+	{
+		id: "parish_register",
+		day: 2,
+		where: "The Post Office",
+		title: "The parish register",
+		note: "Sir Regex Metadata IV: baptised 1943, only child. No brother, no sister, and therefore no niece. TIFF-any's place in the family is a declaration nobody ever validated.",
+		lesson: "Write dates as ISO 8601 (YYYY-MM-DD) and stop the 03-04 argument before it starts. When a date is uncertain, approximate or partly unknown, EDTF can say so: 1874~ (approximately), 2011? (uncertain), 196X (unspecified digit), [a,b] (one of a set). Never guess and record the guess as fact.",
+		link: { text: "Library of Congress: Extended Date/Time Format (EDTF)", url: "https://www.loc.gov/standards/datetime/" }
 	},
 	{
 		id: "hex_gif",
 		day: 2,
 		where: "The Charming GIF",
 		title: "The restored proto-meme",
-		note: "Sir Regex smashing a looping toy, rendered twelve frames at a time. Merry Loopwell's grudge is real, and thirty years old."
+		note: "Sir Regex smashing a looping toy, rendered twelve frames at a time. Merry Loopwell's grudge is real, and thirty years old.",
+		lesson: "Significant properties are what make the work the work. For a 1990s web animation that means timing, looping and palette, not file size or a modified date. Emulation keeps behaviour without rewriting the file. Migration rewrites it.",
+		link: { text: "DPC Handbook: preservation strategies", url: "https://www.dpconline.org/handbook" }
 	},
 	{
 		id: "ewe_an_notice",
 		day: 2,
 		where: "The Village Common",
 		title: "The acquisition notice",
-		note: "Sir Regex was evicting Ewe-an in the language of a deletion policy. Brutal, and a strong motive."
+		note: "Sir Regex was evicting Ewe-an in the language of a deletion policy. Brutal, and a strong motive.",
+		lesson: "The DPC Rapid Assessment Model scores capability from 0 (minimal awareness) to 4 (optimised) across organisational and service sections. It is quick, and it is most useful repeated over time.",
+		link: { text: "DPC Rapid Assessment Model", url: "https://www.dpconline.org/digipres/implement-digipres/dpc-ram" }
 	},
 	{
 		id: "magic_bytes",
@@ -116,7 +156,18 @@ setup.evidence = [
 		where: "The Nibble & Byte",
 		title: "TIFF-any's file signature",
 		note: "A RIFF container with the form type WEBP. She is not a lossless TIFF and never was. Her identity is a claim her own bytes refuse.",
-		keystone: true
+		keystone: true,
+		lesson: "A format mismatch is evidence about identity, not about intent. Record what the file declares, what it was observed to be, and with which tool and signature. Stop there. The conclusion belongs to someone with more evidence.",
+		link: { text: "PRONOM: WebP (fmt/566)", url: "https://www.nationalarchives.gov.uk/PRONOM/fmt/566" }
+	},
+	{
+		id: "certificate",
+		day: 2,
+		where: "The Nibble & Byte",
+		title: "The certificate, re-read",
+		note: "Every technical claim on TIFF-any's certificate fails against her own header. Not TIFF. Not lossless: the chunk is VP8, not VP8L. Not 2,048 KB: 11,416 bytes. Not an unaltered original from 2005, because WebP did not exist until 2010.",
+		lesson: "RIFF sizes are little-endian, and the size field counts everything after the first eight bytes. 90 2C 00 00 is 0x2C90 = 11,408, so the file is 11,416 bytes. Lossy WebP's first chunk is 'VP8 '. Lossless is 'VP8L'. And a format cannot be older than its own invention: anachronism is one of the cheapest authenticity tests there is.",
+		link: { text: "Google: WebP container specification", url: "https://developers.google.com/speed/webp/docs/riff_container" }
 	},
 	{
 		id: "codicil",
@@ -124,7 +175,18 @@ setup.evidence = [
 		where: "The Server Room",
 		title: "The unsigned codicil",
 		note: "Drafted at 19:40 on the night of the murder: TIFF-any struck from the estate for failed authentication. Never signed. He did not live to sign it.",
-		keystone: true
+		keystone: true,
+		lesson: "3-2-1: three copies, on two kinds of media, one of them somewhere else. Copies in the same rack share every disaster. A sync copies your mistakes too. A backup nobody has restored is still only a hope.",
+		link: { text: "NDSA Levels of Digital Preservation", url: "https://ndsa.org/publications/levels-of-digital-preservation/" }
+	},
+	{
+		id: "access_log",
+		day: 3,
+		where: "The Server Room",
+		title: "The repository access log",
+		note: "Rebuilt from parity: at 15:12 on the 14th the draft codicil was previewed by the account TEA, the Nibble & Byte's catering login. She knew about the codicil forty-eight minutes before the tea went out.",
+		lesson: "RAID parity is XOR. Any one lost disk can be rebuilt from the survivors, because D2 = D1 XOR D3 XOR P. RAID protects you from a dead disk. It does not protect you from deletion, corruption, fire or theft. Those are written to every disk at once. RAID is not a backup.",
+		link: { text: "Wikipedia: standard RAID levels", url: "https://en.wikipedia.org/wiki/Standard_RAID_levels" }
 	},
 	{
 		id: "payload",
@@ -132,14 +194,54 @@ setup.evidence = [
 		where: "The Dark Archive",
 		title: "The biscuit's payload",
 		note: "The altered biscuit carried a routine that overwrites volatile memory. Enough to stop a man remembering what he meant to sign.",
-		keystone: true
+		keystone: true,
+		lesson: "A self-signed signature proves only that the signer is willing to sign. Trust comes from a party independent of the thing being vouched for. Provenance is a chain of custody, not a claim.",
+		link: { text: "DPC Handbook: digital forensics", url: "https://www.dpconline.org/handbook" }
+	},
+	{
+		id: "lending_book",
+		day: 3,
+		where: "The Dark Archive",
+		title: "The font lending book",
+		note: "Decoded from mojibake: on the 14th, the Jokerman typeface was lent to Tiff’s Tea Room. Clippy's 'cleaned' copy had already turned the apostrophe into a question mark.",
+		lesson: "There is no such thing as plain text without an encoding. â€™ is the three UTF-8 bytes of ’ read as Windows-1252. That is mojibake, and because the bytes are intact it can be reversed exactly. A '?' or � substitution cannot be reversed: the character was thrown away. Record encodings, and never 'clean' text you cannot reverse.",
+		link: { text: "Joel Spolsky: the absolute minimum about Unicode", url: "https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/" }
+	},
+	{
+		id: "note_txt",
+		day: 3,
+		where: "The Library",
+		title: "NOTE.TXT, undeleted",
+		note: "The 'confession' was typed on the Library PC at 16:04 on the 14th, four minutes after the tea was carried in, and later deleted. Plain text: x-fmt/111. The Jokerman was only added when it was printed.",
+		lesson: "Deleting a file on FAT just replaces the first byte of its directory entry with 0xE5. The data stays on disk until something overwrites it. FAT packs a creation time into 16 bits: 5 for hours, 6 for minutes, 5 for seconds ÷ 2. And plain text has no magic number, so PRONOM's x-fmt/111 can only be matched on the extension.",
+		link: { text: "PRONOM: Plain Text File (x-fmt/111)", url: "https://www.nationalarchives.gov.uk/PRONOM/x-fmt/111" }
+	},
+	{
+		id: "dictation_reel",
+		day: 3,
+		where: "The Skull-ery",
+		title: "The dictation reel",
+		note: "Sir Regex's voice memo, 20:05: 'Confirm the form type, then sign. Confirm the... confirm what?' Saved from Clippy's oven at the right temperature, and played once.",
+		lesson: "Every carrier dies in its own way. Some magnetic tape binders absorb moisture and go sticky (sticky-shed). A slow, low bake of around 50°C can make them playable again, briefly: digitise at once. Acetate gets vinegar syndrome, CD-R dye fades, and flash leaks charge when left unpowered.",
+		link: { text: "Wikipedia: sticky-shed syndrome", url: "https://en.wikipedia.org/wiki/Sticky-shed_syndrome" }
+	},
+	{
+		id: "police_photo",
+		day: 3,
+		where: "The Study",
+		title: "The police photograph",
+		note: "CRIME_SCENE_01.PNG is a JPEG, and says so in its first bytes. Kept exactly as the constable saved it, it is the only record of the Study before the butler: one sheet, one loose pen, one body, and no teacup.",
+		lesson: "An extension is a label. The bytes are the evidence. When they disagree, record both and the tool that noticed. Do not rename or convert the evidential original: create a derivative if you must, and log that as an event.",
+		link: { text: "The National Archives: DROID", url: "https://www.nationalarchives.gov.uk/information-management/manage-information/preserving-digital-records/droid/" }
 	},
 	{
 		id: "clippy_confession",
 		day: 3,
 		where: "The Pixelated Passages",
 		title: "Clippy's housekeeping log",
-		note: "The butler's own record of every item he 'tidied'. He did not kill Sir Regex. He normalised the evidence afterwards, on request."
+		note: "The butler's own record of every item he 'tidied', as PREMIS: he is the implementer of every event, and the lady of the tea room is the authorizer. He did not kill Sir Regex. He normalised the evidence afterwards, on request.",
+		lesson: "PREMIS describes preservation with four entities: Objects (what), Events (what happened), Agents (who or what did it) and Rights (on what authority). An agent's role matters: whoever authorised an event is as much a part of the record as whoever carried it out.",
+		link: { text: "Library of Congress: PREMIS", url: "https://www.loc.gov/standards/premis/" }
 	}
 ];
 
@@ -242,6 +344,18 @@ $(document).on(":passagestart", function (ev) {
    difference between evidence you lost and evidence you never looked for. */
 $(document).on(":passageend", function (ev) {
 	State.variables.visited[ev.passage.title] = true;
+});
+
+/* SugarCube builds passage markup node by node, and a <select> assembled
+   that way is left showing its LAST option rather than the placeholder.
+   That pre-answered every dropdown puzzle (the Library ledger read "WebP"
+   on every row). Put each one back on its blank first option. */
+$(document).on(":passagerender", function (ev) {
+	$(ev.content).find("select").each(function () {
+		if (this.options.length && this.options[0].value === "") {
+			this.selectedIndex = 0;
+		}
+	});
 });
 
 /* Accordion panels (Clippy's interrogation answers). */
@@ -480,7 +594,9 @@ button.button:active { transform: translateY(1px); }
 .char-key > br,
 .character-page > br,
 .evidence-grid > br,
-.puzzle > br,
+/* SugarCube also puts a passage's tags on it as classes, so a passage
+   tagged [Puzzle] is itself .puzzle; only the form block is meant here. */
+.puzzle:not(.passage) > br,
 .puzzle-brief > br,
 .specimen-row > br,
 .question > br,
@@ -1246,12 +1362,13 @@ input[type="checkbox"], input[type="radio"] {
 
 
 :: PassageHeader
-<<if $navEnabled and not ["Start", "Introducing", "Start the game", "Characters", "Case File", "Commendations", "Character Sheets", "The Inspector's Timeline", "End credits"].includes(passage())>>\
+<<if $navEnabled and not ["Start", "Introducing", "Start the game", "Characters", "Case File", "Commendations", "Character Sheets", "The Inspector's Timeline", "Notebook", "End credits"].includes(passage())>>\
 <nav class="case-nav">
 	<span class="case-day">Day <<= $day>></span>
 	<<link "Case file">><<goto "Case File">><</link>>
 	<<link "Dossier">><<goto "Character Sheets">><</link>>
 	<<link "Timeline">><<goto "The Inspector's Timeline">><</link>>
+	<<link "Notebook">><<goto "Notebook">><</link>>
 	<span class="case-tally"><strong><<= setup.evidenceCount()>></strong> / <<= setup.evidence.length>> exhibits</span>
 </nav>
 <</if>>
@@ -1268,8 +1385,9 @@ input[type="checkbox"], input[type="radio"] {
 		<button class="button button--primary" data-passage="Introducing">Open the case</button>
 		<button class="button" data-passage="Characters">The village</button>
 	</div>
+	<img src="Images/txt.png" alt="" style="display:block; width:4.5rem; margin:1.4em auto 0; opacity:0.85;">
 
-	<p class="byline">A Bits &amp; Bots mystery &middot; three days &middot; fourteen exhibits</p>
+	<p class="byline">A Bits &amp; Bots mystery &middot; three days &middot; twenty-one puzzles &middot; twenty-two exhibits</p>
 </div>
 
 
@@ -1510,7 +1628,7 @@ The network is down, the roads are blocked, and a murder has occurred. It is tim
 
 <button class="accordion" type="button">Ask who tidied the foyer</button>
 <div class="panel">
-	<p>The paperclip goes very still. "I did, Detective. At a quarter past eight." A pause of precisely one frame. "Before the body was found. I am told that is unusual. I find it efficient."</p>
+	<p>The paperclip goes very still. "I did, Detective. At a quarter past eight. And I cleared the tea things from the Study at the same time. Sir Regex was sitting at his desk with his pen. He did not seem to know I was there." A pause of precisely one frame. "That was before the body was found. I am told that is unusual. I find it efficient."</p>
 </div>
 
 <div class="start-menu">
@@ -1931,7 +2049,7 @@ Two of these specimens begin with the same four bytes. Four bytes are not an ide
 :: Explore the Skull-ery [Clue]
 You push open a creaking door into the manor's kitchen, bizarrely labelled the "Skull-ery". The air is thick with the smell of ozone and burnt sugar. It is unnervingly clean, save for a single ornate jar on the counter.
 
-Inside, amongst a few perfectly preserved biscuits, is a half-eaten one shaped like a floppy disk. It emits a faint, almost imperceptible static hum. There are crumbs on the flagstones, near where Sir Regex was found.
+Inside, amongst a few perfectly preserved biscuits, is a half-eaten one shaped like a floppy disk. It emits a faint, almost imperceptible static hum. Beside the jar, rinsed and draining, are one cup, one saucer and one plate. Someone has carried the tea things back from the Study, and put the leftovers back in the jar.
 
 Taped inside the lid is the delivery docket. The Nibble &amp; Byte, it seems, ships its baking the way a decent repository ships its holdings: with a manifest, and a digest for every item.
 
@@ -2339,6 +2457,11 @@ Beneath it, pinned to the same sheet, is a validation report. It is dated the da
 <span class="dim">&nbsp;&nbsp;&nbsp;action ........... OBTAIN FORM TYPE AND AMEND THE SCHEMA</span>
 </div>
 
+Tucked behind it is his working draft of the same schema, in his own hand, and the paper is still curled from the warmth of the lamp:
+
+<img src="Images/XML_handwritten_family_tree.png" alt="A handwritten XML family tree on lined paper. The tags wander: several are never closed or closed with the wrong name, and in the Child entry Sir Regex has written his own name and date of birth.">
+<p class="caption">A man who validated everything, writing XML that would not parse. In the entry for his son, he has written his own name.</p>
+
 This is not a family tree. It is a schema of disdain, and a work in progress. One son already declared invalid and cut out. One niece flagged, mid-validation, four bytes from being cut out too.
 
 <span class="field-label">The report names one element that failed validation. Which family member is it? (enter the name as the schema records it)</span>
@@ -2382,6 +2505,8 @@ Clippy shows you to your room, which is immaculate and unnervingly quiet. It fee
 
 :: Sleep [Story]
 <<snow>>\
+<img src="Images/Counting%20digipres.png" alt="A detective with a clipboard at night, counting little walking file formats (TIFF, WAV, PDF/A, numbered floppies and folders) as they hop over a fence.">
+
 <div class="letter-style" style="font-family: Georgia, serif; text-align:center;">
 <p>One TIFF drifts into a dark archive bed,<br>
 Two WAVs curl up where the fixity's fed.<br>
@@ -2463,13 +2588,14 @@ You enter The Nibble &amp; Byte. The air is thick with ozone and artificial vani
 
 On the wall behind her, in a gold frame, hangs a certificate of authenticity. The string that once held a tag to its corner has been cut.
 
-<<if setup.has("signature_ledger")>>You think of specimen F, and the four bytes Sir Regex never finished.<<else>>Something about the frame bothers you, though you could not say what.<</if>>
+<<if setup.has("signature_ledger")>>You think of specimen F, and the four bytes Sir Regex never finished.<<else>>Something about the frame bothers you, though you could not say what.<</if>><<if setup.has("lossy_tag")>> And you know where the tag went: behind the grate in the Graphics Room, torn. Sir Regex must have cut it down to take his sample home. Somebody came to the manor looking for it, and left a corner behind in their hurry.<</if>>
 
 Her boast gives you an idea. You are carrying a Portable Integrity Scanner &mdash; a device that reads the signature at the head of any object, or person, in this strange village.
 
 <div class="start-menu">
 	<button class="button button--primary" data-passage="Tea Room Puzzle">Use the Integrity Scanner on TIFF-any</button>
-	<button class="button" data-passage="Day_2_Map">Leave the tearoom for now</button>
+	<button class="button" data-passage="Tea Room Certificate">Take a closer look at the certificate</button>
+	<button class="button button--quiet" data-passage="Day_2_Map">Leave the tearoom for now</button>
 </div>
 
 
@@ -2665,7 +2791,8 @@ His face blurs, and his voice drops to a grainy whisper, like a low-bitrate reco
 
 <div class="start-menu">
 	<button class="button button--primary" data-passage="Church Puzzle">Accept the Vicar's challenge</button>
-	<button class="button" data-passage="Day_2_Map">Decline for now</button>
+	<button class="button" data-passage="Church Web Archive">Jay Son Jnr. is in the porch, waving a tablet</button>
+	<button class="button button--quiet" data-passage="Day_2_Map">Decline for now</button>
 </div>
 
 
@@ -2755,7 +2882,8 @@ Her offer seems innocent. The glint in her eye suggests you are about to handle 
 
 <div class="start-menu">
 	<button class="button button--primary" data-passage="Post Office Puzzle">Help recalibrate the sorter</button>
-	<button class="button" data-passage="Day_2_Map">Decline for now</button>
+	<button class="button" data-passage="Post Office Register">Help with the parish register</button>
+	<button class="button button--quiet" data-passage="Day_2_Map">Decline for now</button>
 </div>
 
 
@@ -3122,6 +3250,7 @@ Overnight the manor has changed. Doors that were locked stand open, and doors yo
 	<h1>What Was Under the Pen</h1>
 	<hr class="rule">
 	<p>Three new wings are open. The four rooms you searched on the first night have been tidied.</p>
+	<p>But tidied is not the same as erased, and a preservationist knows the difference.</p>
 	<p><em>Whatever you wrote down, you still have. Whatever you left, Clippy has.</em></p>
 </div>
 
@@ -3153,10 +3282,10 @@ Overnight the manor has changed. Doors that were locked stand open, and doors yo
 	<li><a data-passage="Explore the Server Room" class="<<if $evidence.codicil>>done<</if>>">The Server Room &mdash; Colonel Win-ZIP</a></li>
 	<li><a data-passage="Explore the Dark Archive" class="<<if $evidence.payload>>done<</if>>">The Dark Archive &mdash; Dr. Lexy Con</a></li>
 	<li><a data-passage="Explore the Pixelated Passages" class="<<if $evidence.clippy_confession>>done<</if>>">The Pixelated Passages</a></li>
-	<li><a data-passage="Explore the Library 2">The Library (searched)</a></li>
-	<li><a data-passage="Explore the Skull-ery 2">The Skull-ery (searched)</a></li>
-	<li><a data-passage="Explore the Graphics Room 2">The Graphics Room (searched)</a></li>
-	<li><a data-passage="Explore The Study 2">The Study (searched)</a></li>
+	<li><a data-passage="Explore the Library 2" class="<<if $evidence.note_txt>>done<</if>>">The Library (tidied)</a></li>
+	<li><a data-passage="Explore the Skull-ery 2" class="<<if $evidence.dictation_reel>>done<</if>>">The Skull-ery (tidied)</a></li>
+	<li><a data-passage="Explore the Graphics Room 2">The Graphics Room (tidied)</a></li>
+	<li><a data-passage="Explore The Study 2" class="<<if $evidence.police_photo>>done<</if>>">The Study (tidied)</a></li>
 </ul>
 
 <div class="start-menu">
@@ -3171,7 +3300,10 @@ The archival PC is powered down, its screen polished to a mirror-like black. The
 
 <<if setup.has("signature_ledger")>>You let him finish, then take your own notes out of your coat. You copied specimen F on the first night. The ledger is gone; the evidence is not.<<else>>You never read the ledger. Whatever Sir Regex recorded about his own household went into a bin bag at some point between midnight and dawn, and you have only his handwriting on a scrap you cannot produce.<</if>>
 
+Powered down, though. Not wiped. A butler tidies what he can see.
+
 <div class="start-menu">
+	<<if not setup.has("note_txt")>><button class="button button--primary" data-passage="Library Undelete">Power the terminal back up</button><</if>>
 	<button class="button" data-passage="Day_3_Map">Return to the map</button>
 </div>
 
@@ -3185,9 +3317,15 @@ He holds up a pristine biscuit. "One wouldn't want to ingest a malicious payload
 
 <<if setup.has("tampered_batch")>>You have the crumb, sealed, in your coat pocket, and the failed digest written down beside it. He has disposed of the batch. He has not disposed of the check.<<else>>You never ran the check. The batch is gone, the manifest with it, and the only thing you can now say about that biscuit is that it hummed.<</if>>
 
+<<if not setup.has("dictation_reel")>>Behind him the oven is ticking up to temperature, and on the counter, waiting to go in, is a reel of brown quarter-inch tape.
+
+<div class="start-menu">
+	<button class="button button--primary" data-passage="Skull-ery Tape">"Clippy &mdash; what is that reel?"</button>
+	<button class="button" data-passage="Day_3_Map">Return to the map</button>
+</div><<else>>
 <div class="start-menu">
 	<button class="button" data-passage="Day_3_Map">Return to the map</button>
-</div>
+</div><</if>>
 
 
 :: Explore the Graphics Room 2
@@ -3215,7 +3353,10 @@ He did not clean a room. He sanitised a crime scene.
 
 <<if setup.has("forged_note") and setup.has("family_tree")>>You have both documents photographed and transcribed. And you notice what he has done with the pen: capped it, and set it square with the blotter. On the first night it was uncapped.<<elseif setup.has("forged_note") or setup.has("family_tree")>>You have one of the two documents recorded. The other is now a thing you remember rather than a thing you can show.<<else>>You searched this room and took nothing from it. The confession the police accepted is now the only version of that night anybody can produce.<</if>>
 
+The room can be polished. A photograph of the room cannot. The constable who attended on the first night is drinking tea in the hall.
+
 <div class="start-menu">
+	<<if not setup.has("police_photo")>><button class="button button--primary" data-passage="Study Photograph">Ask the constable for his photograph</button><</if>>
 	<button class="button" data-passage="Day_3_Map">Return to the map</button>
 </div>
 
@@ -3231,7 +3372,8 @@ Behind him, a terminal is open on the estate's document repository. Sir Regex's 
 
 <div class="start-menu">
 	<button class="button button--primary" data-passage="Server Room Puzzle">Take the terminal</button>
-	<button class="button" data-passage="Day_3_Map">Back to the map</button>
+	<button class="button" data-passage="Server Room Parity">Look at the blinking disk array</button>
+	<button class="button button--quiet" data-passage="Day_3_Map">Back to the map</button>
 </div>
 
 
@@ -3327,20 +3469,22 @@ The Dark Archive is cold, dusty and full of media that has not been migrated sin
 
 "He was going to purge my collection, Detective! Eliminate all non-plaintext fonts. I only wanted to study the language of decay."
 
-Under a pile of tape reels you find her library lending book. Recent checkouts: Comic Sans, Jokerman, Papyrus. She had access to the typeface the forged note was set in &mdash; as, you now know, did anyone the Colonel sent his list to.
+She lends typefaces the way other people lend books, and she had access to the one the forged note was set in. So, you now know, did anyone the Colonel sent his list to. Her lending book would say who actually borrowed it, if anyone could read the printout Clippy made of it.
 
-But that is not what makes this room matter. On the bench is your crumb, where the police left it, beside a working reader for the format inside it.
+And on the bench is your crumb, handed over to the constable on the first night and brought down here for safe keeping, beside a working reader for the format inside it.
 
 <<if setup.has("tampered_batch")>>
 <div class="start-menu">
-	<button class="button button--primary" data-passage="Dark Archive Puzzle">Read the crumb</button>
-	<button class="button" data-passage="Day_3_Map">Back to the map</button>
+	<<if not setup.has("payload")>><button class="button button--primary" data-passage="Dark Archive Puzzle">Read the crumb</button><</if>>
+	<<if not setup.has("lending_book")>><button class="button" data-passage="Dark Archive Lending Book">Read the lending book</button><</if>>
+	<button class="button button--quiet" data-passage="Day_3_Map">Back to the map</button>
 </div>
 <<else>>
 You have no crumb, and no failed digest to justify asking for one. Dr. Lexy Con watches you stand in front of a reader with nothing to put in it.
 
 <div class="start-menu">
-	<button class="button" data-passage="Day_3_Map">Back to the map</button>
+	<<if not setup.has("lending_book")>><button class="button" data-passage="Dark Archive Lending Book">Read the lending book</button><</if>>
+	<button class="button button--quiet" data-passage="Day_3_Map">Back to the map</button>
 </div>
 <</if>>
 
@@ -3448,26 +3592,11 @@ He holds up a small silver hand-mirror. Instead of your reflection it shows his 
 
 "No," you say. "I'd like your housekeeping log."
 
-The paperclip goes still. Then, because he is a butler, and because he was asked, he produces it.
-
-<div class="terminal">
-<h3>housekeeping &mdash; night of the 14th onward</h3>
-<span class="prompt">&gt;</span> 20:15 &nbsp;foyer normalised <span class="dim">(before the body was found)</span>
-<span class="prompt">&gt;</span> 20:52 &nbsp;study: one document filed, one fragment shelved
-<span class="prompt">&gt;</span> 02:40 &nbsp;library: terminal powered down, waste bin emptied
-<span class="prompt">&gt;</span> 03:10 &nbsp;skull-ery: batch replaced, docket discarded
-<span class="prompt">&gt;</span> 03:35 &nbsp;graphics room: grate swept
-<span class="dim">&gt; authorisation for all of the above: household standing order</span>
-<span class="dim">&gt; standing order issued by: the lady of the tea room</span>
-</div>
-
-"I did not kill him, Detective," Clippy says, and for once he does not chirp. "I tidied. I was asked to tidy, by someone entitled to ask. It looks like you're trying to distinguish those two things."
+The paperclip goes still. Then, because he is a butler, and because he was asked, he goes to fetch it.
 
 <div class="start-menu">
-	<<link "Take the log">>
-		<<logged "clippy_confession">>
-		<<goto "Day_3_Map">>
-	<</link>>
+	<<if not setup.has("clippy_confession")>><button class="button button--primary" data-passage="Pixelated Passages Log">Wait for the log</button><</if>>
+	<button class="button" data-passage="Day_3_Map">Back to the map</button>
 	<button class="button button--quiet" data-passage="End credits">"Yes please, upgrade me"</button>
 </div>
 
@@ -3555,8 +3684,21 @@ You lay it out for the Inspector in the order it happened.
 <span class="prompt">3.</span> <strong>There was a deadline.</strong> At 19:40 his solicitor deposited a codicil striking her from the will, to be executed &ldquo;upon my confirming the form type, which I shall do this evening&rdquo;.
 <span class="prompt">4.</span> <strong>The weapon.</strong> One biscuit in the tearoom batch failed its published digest. Inside the crumb: a routine that overwrites volatile store with no journal and no rollback, signed by the bakery itself.
 <span class="prompt">5.</span> <strong>The cover.</strong> A confession in a banned typeface, signed with a name the estate's authority record does not contain, and carrying no checksum from a man who hashed everything.
-<span class="prompt">6.</span> <strong>The cleaning.</strong> The butler's housekeeping log, normalising the foyer at 20:15 &mdash; before the body was found &mdash; on a household standing order issued by the lady of the tea room.
+<span class="prompt">6.</span> <strong>The cleaning.</strong> <<if setup.has("clippy_confession")>>The butler's housekeeping log: tea things cleared and foyer normalised at 20:15, before the body was found, on a standing order whose authorizer was the lady of the tea room.<<else>>The foyer normalised at 20:15, before the body was found. The butler admits it, though you never got his log.<</if>>
 </div>
+
+<<if setup.has("access_log") or setup.has("note_txt") or setup.has("lending_book") or setup.has("dictation_reel") or setup.has("parish_register") or setup.has("certificate") or setup.has("police_photo")>>\
+<div class="terminal">
+<h3>corroboration</h3>
+<<if setup.has("parish_register")>><span class="prompt">&middot;</span> She is no niece. The parish register records Sir Regex as an only child.
+<</if>><<if setup.has("certificate")>><span class="prompt">&middot;</span> Her certificate swears to a WebP that predates WebP, and to a size her own header says is two hundred times too large.
+<</if>><<if setup.has("access_log")>><span class="prompt">&middot;</span> At 15:12 her catering account previewed the draft codicil. At 16:00 the tea arrived.
+<</if>><<if setup.has("note_txt")>><span class="prompt">&middot;</span> At 16:04 the "suicide note" was typed on the Library PC as NOTE.TXT, four hours before the death it confesses to.
+<</if>><<if setup.has("lending_book")>><span class="prompt">&middot;</span> That afternoon, Jokerman was lent to Tiff&rsquo;s Tea Room.
+<</if>><<if setup.has("police_photo")>><span class="prompt">&middot;</span> The police photograph, kept as found: one sheet, one loose pen, no tea things.
+<</if>><<if setup.has("dictation_reel")>><span class="prompt">&middot;</span> At 20:05 his own voice: "what was I about to sign?"
+<</if>></div>
+<</if>>
 
 "And her alibi?" says the Inspector. "Eleven customers. It is the best alibi in the village."
 
@@ -3651,6 +3793,7 @@ Keystone exhibits &mdash; the three an accusation cannot stand without:<br>
 	<<return "Back to the investigation">>
 	<button class="button button--quiet" data-passage="The Inspector's Timeline">The timeline</button>
 	<button class="button button--quiet" data-passage="Character Sheets">The dossier</button>
+	<button class="button button--quiet" data-passage="Notebook">The notebook</button>
 </div>
 
 
@@ -3664,12 +3807,21 @@ Keystone exhibits &mdash; the three an accusation cannot stand without:<br>
 <<if setup.keystonesHeld() is 3>><span class="ok">&#10003;</span> <strong>A Charge That Stands.</strong> All three keystone exhibits.<br><</if>>\
 <<if setup.has("signature_ledger") and setup.has("magic_bytes")>><span class="ok">&#10003;</span> <strong>Offset Eight.</strong> You finished the identification he started.<br><</if>>\
 <<if setup.has("tampered_batch") and setup.has("payload")>><span class="ok">&#10003;</span> <strong>Chain of Custody.</strong> You kept the crumb from the jar to the reader.<br><</if>>\
-<<if setup.has("clippy_confession")>><span class="ok">&#10003;</span> <strong>Accessory After the Fact.</strong> You asked the butler for his log.<br><</if>>\
-<<if setup.evidenceCount() < 6>><span class="dim">A thin file. The village will be delighted.</span><br><</if>>\
+<<if setup.has("clippy_confession")>><span class="ok">&#10003;</span> <strong>Accessory After the Fact.</strong> You described the butler's log in PREMIS, authorizer and all.<br><</if>>\
+<<if setup.has("certificate")>><span class="ok">&#10003;</span> <strong>Little-Endian.</strong> You read a size field the right way round.<br><</if>>\
+<<if setup.has("web_capture")>><span class="ok">&#10003;</span> <strong>Temporal Coherence.</strong> You cleared a vicar with a timestamp.<br><</if>>\
+<<if setup.has("parish_register")>><span class="ok">&#10003;</span> <strong>1874~</strong> You recorded uncertainty without inventing certainty.<br><</if>>\
+<<if setup.has("note_txt")>><span class="ok">&#10003;</span> <strong>0xE5.</strong> Deleted is not erased.<br><</if>>\
+<<if setup.has("dictation_reel")>><span class="ok">&#10003;</span> <strong>Fifty Degrees.</strong> Baked, not burnt.<br><</if>>\
+<<if setup.has("police_photo")>><span class="ok">&#10003;</span> <strong>As Found.</strong> You kept a mislabelled original exactly as it was.<br><</if>>\
+<<if setup.has("access_log")>><span class="ok">&#10003;</span> <strong>XOR.</strong> You rebuilt a dead disk by hand.<br><</if>>\
+<<if setup.has("lending_book")>><span class="ok">&#10003;</span> <strong>No Such Thing As Plain Text.</strong> You un-mojibaked an apostrophe.<br><</if>>\
+<<if setup.evidenceCount() < 8>><span class="dim">A thin file. The village will be delighted.</span><br><</if>>\
 </div>
 
 <div class="start-menu">
 	<button class="button" data-passage="Case File">The case file</button>
+	<button class="button" data-passage="Notebook">The notebook</button>
 	<button class="button button--quiet" data-passage="End credits">End credits</button>
 </div>
 
@@ -3677,6 +3829,7 @@ Keystone exhibits &mdash; the three an accusation cannot stand without:<br>
 :: Character Sheets
 <h1>The Dossier</h1>
 <hr class="rule">
+<img src="Images/Files.png" alt="Ten manila folders laid out on a dark desk, one for each villager." style="display:block; max-width:22rem; margin:0 auto;">
 <p style="text-align:center;">Click a portrait to read the file.</p>
 
 <div class="char-key">
@@ -3739,6 +3892,7 @@ Keystone exhibits &mdash; the three an accusation cannot stand without:<br>
 
 
 :: End credits
+<img src="Images/txt.png" alt="A plain .txt file icon stabbed with a dagger, bleeding a pool of ones and zeroes." style="display:block; max-width:9rem; margin:0 auto;">
 <h1>Murdered in Plain Text</h1>
 <hr class="rule">
 <p style="text-align:center;">Thank you for playing.</p>
@@ -3748,6 +3902,7 @@ The PRONOM registry and the DPC Rapid Assessment Model are real, and worth your 
 
 <div class="start-menu">
 	<button class="button button--primary" data-passage="Start">Play again</button>
+	<button class="button" data-passage="Notebook">Your preservationist's notebook</button>
 	<button class="button button--quiet" data-passage="Characters">The village</button>
 </div>
 
@@ -3771,6 +3926,8 @@ Do you&hellip;
 You sleep more deeply and silently than you ever have. No thoughts cross your mind. No packets are dropped, because none are sent.
 
 You wake at midday to find the postman has been, with bundles of fan mail for your past work. You read the first six and give up.
+
+<img src="Images/Fanmail.png" alt="Six envelopes, numbered one to six.">
 
 <div class="start-menu">
 	<button class="button" data-passage="Fan Mail Letter #1">Letter one</button>
@@ -3879,6 +4036,33 @@ You settle back into the tedium of everyday life with a contentedly safe yawn.
 </div>
 
 
+:: Notebook
+<h1>The Preservationist's Notebook</h1>
+<hr class="rule">
+<p style="text-align:center;">What each exhibit taught you, written up the way you would explain it to a colleague, with somewhere to read more. The village is invented. Everything in this notebook is real.</p>
+
+<div class="ledger-summary">
+<strong><<= setup.evidenceCount()>></strong> of <<= setup.evidence.length>> pages written.<<if setup.evidenceCount() lt setup.evidence.length>> The rest are still blank, waiting for an exhibit.<</if>>
+</div>
+
+<div class="evidence-grid">
+<<for _i, _item range setup.evidence>>\
+<<if setup.has(_item.id)>>\
+<div class="evidence-card <<if _item.keystone>>evidence-card--keystone<</if>>">
+	<h3><<= _item.title>></h3>
+	<span class="where">Day <<= _item.day>> &middot; <<= _item.where>></span>
+	<p><<= _item.lesson>></p>
+	<p style="margin-top:0.6em;"><a @href="_item.link.url" target="_blank" rel="noopener noreferrer"><<= _item.link.text>></a></p>
+</div>
+<</if>>\
+<</for>>
+</div>
+
+<div class="start-menu">
+	<<return "Back">>
+	<button class="button button--quiet" data-passage="Case File">The case file</button>
+</div>
+
 :: The Inspector's Timeline
 <h1>Where Everyone Was</h1>
 <hr class="rule">
@@ -3886,19 +4070,25 @@ You settle back into the tedium of everyday life with a contentedly safe yawn.
 
 <div class="terminal">
 <h3>evening of the 14th &mdash; corroborated movements</h3>
-<span class="prompt">16:00</span> tea delivered to the manor from The Nibble &amp; Byte <span class="dim">(signed for by the butler)</span>
-<span class="prompt">17:30</span> Vicar Vector &mdash; evensong, forty witnesses
+<<if setup.has("access_log")>><span class="prompt">15:12</span> <span class="hl">draft codicil previewed on the estate repository by the account TEA</span>
+<</if>><span class="prompt">16:00</span> tea brought to the manor by hand from The Nibble &amp; Byte <span class="dim">(signed for by the butler)</span>
+<<if setup.has("note_txt")>><span class="prompt">16:04</span> <span class="hl">NOTE.TXT created on the Library PC</span>
+<</if>><span class="prompt">17:30</span> Vicar Vector &mdash; evensong, forty witnesses
 <span class="prompt">18:00</span> Ewe-an &mdash; bringing the flock in, seen by half the common
 <span class="prompt">19:40</span> solicitor's deposit lodged to the estate repository
 <span class="prompt">19:45</span> Colonel Win-ZIP and Jay Son Jnr. &mdash; both in the .PUB, arguing loudly, until 21:00
-<span class="prompt">20:00</span> MPEG-gy &mdash; sorting office, night shift, clocked in
-<span class="prompt">20:10</span> Merry Loopwell &mdash; her shop, on camera, looping
-<span class="prompt">20:15</span> foyer normalised by the butler <span class="dim">(before the body was found)</span>
+<<if setup.has("note_txt")>><span class="prompt">19:52</span> <span class="hl">TODO.TXT: "CONFIRM FORM TYPE. SIGN CODICIL. 20:30."</span>
+<</if>><span class="prompt">20:00</span> MPEG-gy &mdash; sorting office, night shift, clocked in
+<<if setup.has("dictation_reel")>><span class="prompt">20:05</span> <span class="hl">Sir Regex, dictating: "what was I about to sign?"</span>
+<</if>><span class="prompt">20:10</span> Merry Loopwell &mdash; her shop, on camera, looping
+<span class="prompt">20:15</span> tea things cleared from the study, foyer normalised by the butler <span class="dim">(before the body was found)</span>
 <span class="prompt">20:20</span> Sir Regex found at his desk. Pen uncapped. Desk bare.
 <span class="prompt">20:20</span> <span class="hl">TIFF-any &mdash; in the tea room, in front of eleven customers, four hours' drive from doubt</span>
 </div>
 
-<<if setup.has("payload") or setup.has("tampered_batch")>>
+<<if setup.has("web_capture")>>Jay Son's "proof" that the Vicar announced the death at 18:32 has been struck out. The page said no such thing at the time: a banner captured two days later was stitched into the replay.
+
+<</if>><<if setup.has("payload") or setup.has("tampered_batch")>>
 Every alibi is genuine. That is what took you so long.
 
 The one at the foot of the list is the best of them, and it is the best of them because it is the only one that did not need to be arranged. She was never going to be at the manor at twenty past eight. She did not need to be. The thing that killed him arrived at four o'clock, on a plate, with a doily, and waited.
@@ -3913,4 +4103,962 @@ You do not yet have anything that could tell the difference. You would need to k
 <div class="start-menu">
 	<<return "Back to the investigation">>
 	<button class="button button--quiet" data-passage="Case File">The case file</button>
+</div>
+
+
+:: Tea Room Certificate [Puzzle]
+<<if not setup.has("magic_bytes")>>\
+You stand in front of the gold frame for a long time. Every claim on it is precise, ceremonial and confident. Without a reading of her actual bytes there is nothing to hold any of them against. A certificate checked only against itself is just gold foil.
+
+<div class="start-menu">
+	<button class="button" data-passage="Explore the Tea Room">Step back from the frame</button>
+</div>
+<<else>>\
+You have her header. She has a certificate. You take the frame down while she is serving table six and read it against your scanner, line by line.
+
+<div class="letter-style" style="text-align:center; max-width:30rem;">
+	<h3 style="letter-spacing:0.2em; margin-top:0;">CERTIFICATE OF AUTHENTICITY</h3>
+	<p style="text-align:left; font-family: ui-monospace, 'Courier New', monospace; font-size:0.85em; line-height:1.9;">
+	Holder ...... TIFF-any, niece of the house<br>
+	Format ...... TIFF 6.0, uncompressed<br>
+	Fidelity .... LOSSLESS<br>
+	Extent ...... 2,048 KB<br>
+	State ....... unaltered original, never migrated, since 2005<br>
+	Subject ..... a lady of the house, c. 1874<br>
+	Issued by ... The Nibble &amp; Byte</p>
+</div>
+
+<div class="hexdump"><span class="offset">00000000</span>  52 49 46 46 <span class="hl">90 2C 00 00</span>  57 45 42 50 <span class="hl">56 50 38 20</span>
+<span class="offset">        </span>   R  I  F  F   .  .  .  .    W  E  B  P   <span class="hl">V  P  8  &#9251;</span></div>
+
+<div class="puzzle-brief">
+<strong>Hold the claims to the bytes.</strong> Three things you need to know, all of them in the WebP specification:
+<span class="brief-sep"></span>
+&bull; The four bytes after <code>RIFF</code> are the size of everything that <em>follows</em> them, stored <strong>little-endian</strong> (least significant byte first).<br>
+&bull; A WebP's first chunk names its coding: <code>VP8&#9251;</code> (with a trailing space), <code>VP8L</code>, or <code>VP8X</code> for the extended layout.<br>
+&bull; Google first released WebP in 2010.
+</div>
+
+<div class="puzzle" id="cert-puzzle">
+
+<span class="field-label">1. How large is she, really?</span>
+<select id="certSize" aria-label="True file size">
+	<option value="">&mdash; read the size field &mdash;</option>
+	<option value="a">2,418,802,688 bytes</option>
+	<option value="b">11,408 bytes</option>
+	<option value="c">11,416 bytes</option>
+	<option value="d">2,097,152 bytes (2,048 KB, as certified)</option>
+</select>
+
+<span class="field-label">2. Tick every line of the certificate her own header disproves &mdash; and nothing else.</span>
+<label class="option"><input type="checkbox" id="ce1"><span><strong>Format</strong> &mdash; TIFF 6.0, uncompressed</span></label>
+<label class="option"><input type="checkbox" id="ce2"><span><strong>Fidelity</strong> &mdash; LOSSLESS</span></label>
+<label class="option"><input type="checkbox" id="ce3"><span><strong>Extent</strong> &mdash; 2,048 KB</span></label>
+<label class="option"><input type="checkbox" id="ce4"><span><strong>State</strong> &mdash; unaltered original, never migrated, since 2005</span></label>
+<label class="option"><input type="checkbox" id="ce5"><span><strong>Subject</strong> &mdash; a lady of the house, c. 1874</span></label>
+<label class="option"><input type="checkbox" id="ce6"><span><strong>Issued by</strong> &mdash; The Nibble &amp; Byte</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Annotate the certificate">>
+		<<set _try to setup.bump("certificate")>>
+		<<set _sizeOk to setup.val("certSize") is "c">>
+		<<set _setOk to setup.exactSet(["ce1", "ce2", "ce3", "ce4", "ce5", "ce6"], ["ce1", "ce2", "ce3", "ce4"])>>
+		<<if _sizeOk and _setOk>>
+			<<replace "#cert-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Four claims, four failures</h2>
+					<p><code>90 2C 00 00</code>, read little-endian, is <code>0x00002C90</code>: 11,408 bytes of chunks, plus the eight bytes of <code>RIFF</code> and the size field itself. She is 11,416 bytes, about one two-hundredth of what her certificate says. Read it big-endian and you get two gigabytes, which is the kind of mistake that ends up in a catalogue for twenty years.</p>
+					<p>Her first chunk is <code>VP8&#9251;</code>, the lossy coding. A lossless WebP would say <code>VP8L</code>. And she cannot have been an unmigrated WebP since 2005, because there was no WebP before 2010. The certificate is not merely wrong. It is <em>anachronistic</em>: it swears to a history her format could not have had.</p>
+					<p>The subject line survives. A portrait of someone from 1874 can perfectly well be a WebP made last year. The date of the content is not the date of the file. And "issued by The Nibble &amp; Byte" is true, which is precisely the problem. She certified herself.</p>
+					<hr>
+					<p>You hang the frame back up, very straight. TIFF-any notices anyway.</p>
+				</div>
+				<<logged "certificate">>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Tea Room">Back to the tea room</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#cert-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Annotation smudged</h2>
+					<p><<if not _sizeOk>>Your size is wrong. Little-endian means the <em>last</em> byte written is the most significant, and the size field does not count the eight bytes that precede the payload. <</if>><<if not _setOk>>Your set of disproved claims is wrong. A header can tell you about the <em>file</em>: its format, coding, size and therefore its possible age. It cannot tell you who is in the picture, or who printed the certificate.<</if>></p>
+					<<attemptnote "certificate">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Tea Room Certificate">Read the certificate again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#cert-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Reframed</h2>
+					<p>"It looks like you're trying to annotate a certificate!" Clippy says, lifting the frame out of your hands. He has come in for the manor's scones. "Original documents should never be marked up. I'll take it somewhere safe."</p>
+					<p>When you next look at the wall, there is a watercolour of a lighthouse where the certificate used to be.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Tea Room">Back to the tea room</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Tea Room">Leave the frame alone</button>
+</div>
+<</if>>
+
+
+:: Church Web Archive [Puzzle]
+Jay Son Jnr. has followed you into the church with a tablet and an expression of enormous satisfaction.
+
+"Proof," he says. "The Vicar's festival website, from the Parish Web Archive. Look at the date on the capture. He announced the old man's death <em>two hours before it happened</em>."
+
+The tablet shows a replay of the parish website, with the archive's own banner across the top.
+
+<div class="terminal">
+<h3>parish web archive &mdash; replay</h3>
+<span class="prompt">&gt;</span> http://stmary.wold/ipres-bid
+<span class="dim">&gt; resource                        captured (YYYYMMDDhhmmss)</span>
+<span class="prompt">&gt;</span> ipres-bid.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 20261114183207
+<span class="prompt">&gt;</span> &nbsp;&#9500; style.css &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 20261114183208
+<span class="prompt">&gt;</span> &nbsp;&#9500; banner.png &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#D98074">20261116091544</span>
+<span class="dim">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"IN MEMORIAM SIR REGEX &mdash; iPRES COMES TO THE WOLD"</span>
+<span class="prompt">&gt;</span> &nbsp;&#9492; schedule.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 20261114183210
+<span class="dim">&gt; nearest available capture used for each embedded resource</span>
+</div>
+
+<div class="puzzle-brief">
+<strong>What did the page say, and when?</strong> A web archive does not store a page as one object. It stores each resource separately, at the moment the crawler happened to reach it, and rebuilds the page when you ask for it.
+</div>
+
+<div class="puzzle" id="wayback-puzzle">
+
+<span class="field-label">1. When was the page itself (the HTML) captured?</span>
+<select id="wbHtml" aria-label="HTML capture time">
+	<option value="">&mdash; read the timestamp &mdash;</option>
+	<option value="a">14th, at 18:32 &mdash; before Sir Regex was found</option>
+	<option value="b">16th, at 09:15 &mdash; two days after</option>
+	<option value="c">14th, at 20:20 &mdash; the moment he was found</option>
+	<option value="d">It cannot be read from a timestamp like that</option>
+</select>
+
+<span class="field-label">2. Tick every statement that holds &mdash; and nothing else.</span>
+<label class="option"><input type="checkbox" id="wb1"><span>The memorial banner was not on the page as it stood on the 14th. The replay borrowed it from a capture made two days later.</span></label>
+<label class="option"><input type="checkbox" id="wb2"><span>The Vicar announced Sir Regex's death before it happened.</span></label>
+<label class="option"><input type="checkbox" id="wb3"><span>Each resource in an archived page carries its own capture time, and they need not agree.</span></label>
+<label class="option"><input type="checkbox" id="wb4"><span>Mixing captures like this shows the archive has been tampered with.</span></label>
+<label class="option"><input type="checkbox" id="wb5"><span>The banner file kept its name while its content changed. A crawler two days apart got two different images at one URL.</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Give Jay Son your reading">>
+		<<set _try to setup.bump("wayback")>>
+		<<set _htmlOk to setup.val("wbHtml") is "a">>
+		<<set _setOk to setup.exactSet(["wb1", "wb2", "wb3", "wb4", "wb5"], ["wb1", "wb3", "wb5"])>>
+		<<if _htmlOk and _setOk>>
+			<<replace "#wayback-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Temporally incoherent, and innocent</h2>
+					<p>The HTML was captured at 18:32 on the 14th, and at 18:32 on the 14th the page carried a festival bid and nothing else. The parish updated <code>banner.png</code> in place after the death. The crawler collected the new one on the 16th, and the replay, asked for the 14th, filled the gap with the nearest banner it had. Nothing was tampered with. That is simply how replay works, and why every resource in a capture carries its own datetime.</p>
+					<p>A page in a web archive is a reconstruction, not a photograph. Before you testify to what it "said" on a day, check what each part of it was doing on that day.</p>
+					<hr>
+					<p>Jay Son takes the tablet back without a word. The Vicar, who has been listening from the vestry, looks at you as though you have performed a small miracle, which in Checksum-on-the-Wold you have. His motive was real. His foreknowledge was not.</p>
+				</div>
+				<<logged "web_capture">>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Church">Back to the nave</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#wayback-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Out of sync</h2>
+					<p><<if not _htmlOk>>Read the HTML's timestamp as year, month, day, hour, minute, second: four digits, then two, two, two, two, two. <</if>><<if not _setOk>>Your statements are wrong. Ask of each one: does the replay tell you about the <em>Vicar</em>, or only about the <em>crawler</em>? One of the resources was collected on a different day from the others.<</if>></p>
+					<<attemptnote "wayback">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Church Web Archive">Look at the replay again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#wayback-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Page not found</h2>
+					<p>"It looks like you're browsing an outdated page!" Clippy says, leaning over Jay Son's shoulder. "Let me refresh it for you." He presses a key. The replay reloads as the live site: a single line reading <em>Under construction</em>.</p>
+					<p>Jay Son is already out of the door, telling the whole village what the Vicar knew.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Church">Back to the nave</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Church">Hand the tablet back</button>
+</div>
+
+
+:: Post Office Register [Puzzle]
+MPEG-gy has a second job for you, and this one she does not sing about.
+
+"The diocese is digitising the parish register," she says, "and the estate's solicitor sent over his family file to cross-reference. But the dates are a <em>mess</em>, darling. The new system only takes proper dates, and I won't have it guess."
+
+The solicitor's copy is typed, and it is clearly a fair copy of the schema Sir Regex kept in his study:
+
+<img src="Images/XML_family_tree.png" alt="A typed XML family file: Sir Regex Metadata IV, born 01-01-1943; Jay Son Junior, born 01-01-1993; TIFFany, niece, born 03-04-2005, dedicates her life to the Nibble and Byte.">
+<p class="caption">The solicitor's copy. Note how every date is written.</p>
+
+<div class="puzzle-brief">
+<strong>Record what you know, and no more.</strong> Write each date the way the register requires: ISO 8601 (<code>YYYY-MM-DD</code>) where the date is certain, and the Extended Date/Time Format where it is not.
+<span class="brief-sep"></span>
+In EDTF, <code>~</code> means <em>approximately</em>, <code>?</code> means <em>uncertain</em>, <code>X</code> stands for a digit nobody knows, and <code>[a,b]</code> means <em>one of these, we don't know which</em>. An interval such as <code>1990/1999</code> is for something that lasted the whole time.
+</div>
+
+<div class="puzzle" id="register-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen">Sir Regex Metadata IV, born <code>01-01-1943</code><small>From the solicitor's copy</small></div>
+	<div><select id="rgA" aria-label="Sir Regex's date of birth">
+		<option value="">&mdash; record as &mdash;</option>
+		<option value="1943-01-01">1943-01-01</option>
+		<option value="1943~">1943~</option>
+		<option value="[1943-01-01,1943-01-01]">[1943-01-01,1943-01-01]</option>
+		<option value="194X">194X</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">TIFFany, born <code>03-04-2005</code><small>The copy never says whether it writes day or month first, and no other date in it settles the question</small></div>
+	<div><select id="rgB" aria-label="TIFF-any's date of birth">
+		<option value="">&mdash; record as &mdash;</option>
+		<option value="2005-04-03">2005-04-03</option>
+		<option value="2005-03-04">2005-03-04</option>
+		<option value="set">[2005-03-04,2005-04-03]</option>
+		<option value="2005-03-04/2005-04-03">2005-03-04/2005-04-03</option>
+		<option value="2005~">2005~</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Lady Metadata, his mother, died "in the sixties"<small>The last digit of the year has been eaten by damp</small></div>
+	<div><select id="rgC" aria-label="Lady Metadata's date of death">
+		<option value="">&mdash; record as &mdash;</option>
+		<option value="196X">196X</option>
+		<option value="1960/1969">1960/1969</option>
+		<option value="1965~">1965~</option>
+		<option value="1960">1960</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">Portrait of a lady of the house, painted "about 1874"<small>Pencilled on the back of the frame</small></div>
+	<div><select id="rgD" aria-label="Date of the portrait">
+		<option value="">&mdash; record as &mdash;</option>
+		<option value="1874~">1874~</option>
+		<option value="1874?">1874?</option>
+		<option value="1874">1874</option>
+		<option value="187X">187X</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">TIFF-any first arrived in the village "in 2011, I think, but don't hold me to it"<small>Statement of Vicar Vector</small></div>
+	<div><select id="rgE" aria-label="Date TIFF-any arrived">
+		<option value="">&mdash; record as &mdash;</option>
+		<option value="2011?">2011?</option>
+		<option value="2011~">2011~</option>
+		<option value="2011">2011</option>
+		<option value="201X">201X</option>
+	</select></div>
+</div>
+
+</div>
+
+<div class="start-menu">
+	<<link "Enter them in the register">>
+		<<set _try to setup.bump("register")>>
+		<<set _right to setup.score({ rgA: "1943-01-01", rgB: "set", rgC: "196X", rgD: "1874~", rgE: "2011?" })>>
+		<<if _right is 5>>
+			<<replace "#register-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Entered, and nothing invented</h2>
+					<p><code>01-01-1943</code> reads the same in either order, so it is certain: <code>1943-01-01</code>. <code>03-04-2005</code> is not: the third of April or the fourth of March, and the honest record is <code>[2005-03-04,2005-04-03]</code>, one of the two. An interval would claim she was being born for a month. A damp-eaten year is <code>196X</code>. "About" is approximate, <code>~</code>. "I think, but don't hold me to it" is uncertain, <code>?</code>. They are different things, and the difference survives only if you write it down.</p>
+					<hr>
+					<p>The register accepts every line. Then, because the diocese's system cross-references, it puts up the baptism page for 1943 beside them:</p>
+					<div class="letter-style">
+						<p><em>Regex, son of Sir Regex Metadata III and Lady Metadata. Baptised at St. Mary of the Lossless.</em></p>
+						<p style="text-align:center;"><strong>Only child.</strong></p>
+					</div>
+					<p>No brother. No sister. No niece. MPEG-gy reads it over your shoulder and, for once, says nothing that rhymes.</p>
+					<p>She is down in his schema as his niece because she declared it, and because nobody validated the declaration until a month ago. And then somebody did.</p>
+				</div>
+				<<logged "parish_register">>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Post Office">Back to the counter</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#register-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Register rejects the batch</h2>
+					<p><<= _right>> of 5 dates are recorded as the evidence allows. The register will not take a guess dressed as a fact. And it will not take an uncertainty you have made bigger or smaller than it really is. <em>Approximately</em> and <em>uncertain</em> are not the same claim, and neither is <em>one of two days</em> the same as <em>a whole month</em>.</p>
+					<<attemptnote "register">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Post Office Register">Re-enter the dates</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#register-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Auto-corrected</h2>
+					<p>"It looks like you're entering dates!" Clippy says, from behind the parcel scales. "I've set them all to today. Much tidier, and so easy to sort."</p>
+					<p>The register now records that everyone in Checksum-on-the-Wold was born, baptised and painted this morning. The cross-reference finds nothing at all.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Post Office">Back to the counter</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Post Office">Leave the dates as they are</button>
+</div>
+
+
+:: Library Undelete [Puzzle]
+You find the wall socket behind the stacks, and the archival PC grinds back to life with the sound of a man clearing his throat. The browser is gone and the PRONOM tab with it. What is left is a disk, and on a disk this old, the directory is a table you can read.
+
+<div class="hexdump"><span class="offset">entry   name (8.3, 11 bytes)               attr  created   size</span>
+<span class="offset">0x0000</span>  53 49 47 53 20 20 20 20 43 53 56   20    0x6A40   1,822
+<span class="offset">0x0020</span>  <span class="hl">E5</span> 4F 54 45 20 20 20 20 54 58 54   20    0x8080     412
+<span class="offset">0x0040</span>  54 4F 44 4F 20 20 20 20 54 58 54   20    0x9E80      96
+<span class="offset">       </span>   <span class="dim">S I G S . . . . C S V  /  ? O T E . . . . T X T  /  T O D O . . . . T X T</span></div>
+
+<div class="puzzle-brief">
+<strong>Erased, or merely deleted?</strong> Clippy says the terminal was "permanently erased". This is a FAT disk. On FAT, a file's name lives in a 32-byte directory entry: eight characters, then a three-character extension, padded with spaces (<code>20</code>).
+<span class="brief-sep"></span>
+The creation time is packed into sixteen bits as <code>hhhhh mmmmmm sssss</code>: five bits of hours, six of minutes, and five of <em>seconds divided by two</em>. The values above are already in the right byte order for you.
+</div>
+
+<div class="puzzle" id="undelete-puzzle">
+
+<span class="field-label">1. Which entry has been deleted?</span>
+<select id="udEntry" aria-label="Deleted entry">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="0">0x0000 &mdash; SIGS.CSV</option>
+	<option value="20">0x0020 &mdash; ?OTE.TXT</option>
+	<option value="40">0x0040 &mdash; TODO.TXT</option>
+	<option value="none">None of them; deleted files leave no entry</option>
+</select>
+
+<span class="field-label">2. Its first letter has been overwritten. What was the file called? (name and extension)</span>
+<<textbox "_udName" "">>
+
+<span class="field-label">3. Decode its creation time, <code>0x8080</code>.</span>
+<select id="udTime" aria-label="Creation time">
+	<option value="">&mdash; decode &mdash;</option>
+	<option value="0808">08:08</option>
+	<option value="1604">16:04</option>
+	<option value="1280">12:08</option>
+	<option value="2020">20:20</option>
+</select>
+
+<span class="field-label">4. Can its contents still be read?</span>
+<select id="udRecover" aria-label="Recoverability">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="gone">No &mdash; deleted means the data is gone</option>
+	<option value="yes">Probably &mdash; the data stays on disk until its clusters are reused</option>
+	<option value="encrypted">Only with the password of the person who deleted it</option>
+</select>
+
+</div>
+
+<div class="start-menu">
+	<<link "Recover the file">>
+		<<set _try to setup.bump("undelete")>>
+		<<set _ok to setup.val("udEntry") is "20" and setup.answered(_udName, ["NOTE.TXT", "NOTE TXT", "NOTE"]) and setup.val("udTime") is "1604" and setup.val("udRecover") is "yes">>
+		<<if _ok>>
+			<<replace "#undelete-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Deleted is not erased</h2>
+					<p>FAT deletes a file by overwriting the first byte of its name with <code>E5</code> and marking its clusters free. Nothing else changes. The 412 bytes are still sitting where they were written, and nothing has been saved to this disk since. <code>?OTE TXT</code> is <code>NOTE.TXT</code>.</p>
+					<p><code>0x8080</code> is <code>10000 000100 00000</code>: hour 16, minute 4, second 0. It was written at <strong>four minutes past four</strong> on the afternoon of the 14th.</p>
+					<div class="letter-style" style="font-family: ui-monospace, 'Courier New', monospace; font-size:0.85em;">
+					<p>To whom it may concern,</p>
+					<p>Always keep in mind that not everything appears as what it looks like. This whole place is a corrupted image.</p>
+					<p>As a result I have definitely decided to take my own life, despite the fact that it probably really looks like murder! This is my last testimony and only source of truth.</p>
+					<p>Ignoring all lack of checksums,,</p>
+					<p>Sir Reg Mead V</p>
+					</div>
+					<p>The confession, word for word, doubled comma and all, typed more than four hours before he died. At four o'clock the tea was carried in to the manor by hand. Four minutes later, somebody sat down at this desk.</p>
+					<hr>
+					<p>And the registry would have told him what it was. PRONOM's <code>x-fmt/111</code>, <em>Plain Text File</em>, identified on its extension alone, because plain text has no magic number to identify it by. You think of the scrap you found by the bin on the first night, <code>x-fmt/&hellip;</code>, scribbled through by a hand that could no longer hold on to what it was writing. He had found it. Then he had lost it again.</p>
+					<p>The entry after it, <code>TODO.TXT</code>, created at 19:52, contains three lines: <code>CONFIRM FORM TYPE. SIGN CODICIL. 20:30.</code></p>
+					<p>He was murdered in plain text.</p>
+				</div>
+				<<logged "note_txt">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#undelete-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Read error</h2>
+					<p>At least one answer is wrong. A deleted FAT entry gives itself away in its very first byte. For the time, write <code>0x8080</code> out as sixteen bits and cut it 5 / 6 / 5. And ask what "deleting" a directory entry actually does to the data it points at.</p>
+					<<attemptnote "undelete">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Library Undelete">Read the directory again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#undelete-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Defragmented</h2>
+					<p>"It looks like your disk is fragmented!" Clippy says, reaching past you. "Let me optimise it." The drive chatters for eleven minutes.</p>
+					<p>When it stops, every free cluster on the disk has been tidied, consolidated and overwritten. Whatever <code>E5</code> was pointing at is now part of a very well-organised nothing.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Library 2">Switch it off again</button>
+</div>
+
+
+:: Skull-ery Tape [Puzzle]
+"Sterilising," Clippy says, with the oven door open and a reel of quarter-inch tape in his gloved hand. "It came out of Sir Regex's dictation machine when I tidied the study. Old tape is so <em>sticky</em>, Detective. It squeals. Two hundred and thirty degrees should see to it."
+
+You are not certain whether he is trying to help or trying to destroy it. You are not certain he knows.
+
+<div class="puzzle-brief">
+<strong>Every carrier dies its own way.</strong> Before you let anything near an oven, match each carrier on the Skull-ery shelf to the way it characteristically fails. Then say what, if anything, should be done with the reel.
+</div>
+
+<div class="puzzle" id="tape-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen">Sir Regex's dictation reel<small>1980s polyester tape; it squeals and sheds when played</small></div>
+	<div><select id="tpA" aria-label="Failure of the dictation reel">
+		<option value="">&mdash; failure &mdash;</option>
+		<option value="sticky">Binder takes on moisture and goes sticky</option>
+		<option value="vinegar">Base decays, shrinks and smells of vinegar</option>
+		<option value="dye">Recording dye fades with light and heat</option>
+		<option value="charge">Stored charge leaks away unpowered</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">The parish choir, 1956<small>Acetate-backed audio tape, curling at the edges</small></div>
+	<div><select id="tpB" aria-label="Failure of the acetate tape">
+		<option value="">&mdash; failure &mdash;</option>
+		<option value="sticky">Binder takes on moisture and goes sticky</option>
+		<option value="vinegar">Base decays, shrinks and smells of vinegar</option>
+		<option value="dye">Recording dye fades with light and heat</option>
+		<option value="charge">Stored charge leaks away unpowered</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">"Fete photos 2003"<small>A recordable CD, left on the windowsill</small></div>
+	<div><select id="tpC" aria-label="Failure of the CD-R">
+		<option value="">&mdash; failure &mdash;</option>
+		<option value="sticky">Binder takes on moisture and goes sticky</option>
+		<option value="vinegar">Base decays, shrinks and smells of vinegar</option>
+		<option value="dye">Recording dye fades with light and heat</option>
+		<option value="charge">Stored charge leaks away unpowered</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">USB stick, "RECIPES &mdash; DO NOT LOSE"<small>In the cutlery drawer, unplugged since 2012</small></div>
+	<div><select id="tpD" aria-label="Failure of the USB stick">
+		<option value="">&mdash; failure &mdash;</option>
+		<option value="sticky">Binder takes on moisture and goes sticky</option>
+		<option value="vinegar">Base decays, shrinks and smells of vinegar</option>
+		<option value="dye">Recording dye fades with light and heat</option>
+		<option value="charge">Stored charge leaks away unpowered</option>
+	</select></div>
+</div>
+
+<span class="field-label">What should be done with the reel?</span>
+<select id="tpTreat" aria-label="Treatment for the reel">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="hot">Bake at 230&deg;C, as Clippy proposes, to drive the moisture out quickly</option>
+	<option value="low">Bake slowly at around 50&deg;C for some hours, then play it once and digitise it straight away</option>
+	<option value="freeze">Freeze it, to stop the binder degrading further, and play it later</option>
+	<option value="wash">Rinse the oxide clean under the tap and dry it on a radiator</option>
+</select>
+
+</div>
+
+<div class="start-menu">
+	<<link "Take the reel from Clippy">>
+		<<set _try to setup.bump("tape")>>
+		<<set _right to setup.score({ tpA: "sticky", tpB: "vinegar", tpC: "dye", tpD: "charge" })>>
+		<<set _treatOk to setup.val("tpTreat") is "low">>
+		<<if _right is 4 and _treatOk>>
+			<<replace "#tape-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Baked, not burnt</h2>
+					<p>The squeal is sticky-shed. The binder holding the oxide to the tape has absorbed moisture over forty years and turned gummy. A long, gentle bake at about fifty degrees drives the moisture out and makes the tape playable again for a while. It is first aid, not a cure. You get one good pass, so the digitiser has to be waiting. At two hundred and thirty degrees you would get a puddle.</p>
+					<p>The acetate has vinegar syndrome, the CD-R's dye is fading on the windowsill, and the USB stick has been quietly forgetting its recipes in the dark since 2012. No medium keeps itself. That is why we copy.</p>
+					<hr>
+					<p>Four hours later the reel plays once, with the Skull-ery's laptop recording every second of it. Most of it is household dictation. The last entry is timestamped by the machine at 20:05 on the 14th.</p>
+					<div class="terminal">
+					<span class="prompt">20:05</span> "Memo. Note to self. Confirm the form type, then sign. Confirm the&hellip;"
+					<span class="dim">(eleven seconds of silence)</span>
+					<span class="prompt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> "&hellip;confirm what? Clippy? Clippy, what was I about to sign?"
+					<span class="dim">(the recording ends)</span>
+					</div>
+					<p>Fifteen minutes before he was found, he had a pen in his hand and an empty space in his head where his evening's purpose had been.</p>
+				</div>
+				<<logged "dictation_reel">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#tape-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Smell of hot plastic</h2>
+					<p><<= _right>> of 4 carriers matched<<if not _treatOk>>, and your treatment would not end well for the reel<</if>>. Think about what each carrier is physically made of: a binder, a plastic base, a dye layer, a cell holding a charge. Only one of these four problems is ever treated with an oven, and never a hot one.</p>
+					<<attemptnote "tape">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Skull-ery Tape">Think again, quickly</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#tape-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Done to a crisp</h2>
+					<p>The oven door closes with a soft and final click. "It looks like you're trying to preserve magnetic media!" Clippy says, setting a timer. "I find most things keep better once they've stopped changing."</p>
+					<p>Twenty minutes later he serves the reel on a doily. It is a single brown biscuit of polyester, and it will never say anything again.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Skull-ery 2">Leave him to it</button>
+</div>
+
+
+:: Study Photograph [Puzzle]
+The constable who attended on the first night is still at the manor, snowed in like everyone else, and still has his camera card. He has one photograph of the Study as he found it, before the butler, before the lemon polish.
+
+<img src="Images/The_Study_with_feet.png" alt="The study at night: a bare desk with a single sheet of paper and a loose pen beside an inkwell. At the right edge of the frame, a man's legs and shoes lie on the floor beside the desk.">
+<p class="caption">CRIME_SCENE_01.PNG &middot; 217,238 bytes &middot; SHA-256 <code>b216ff8c&hellip;a86354</code></p>
+
+<div class="hexdump"><span class="offset">00000000</span>  <span class="hl">FF D8 FF E0</span> 00 10 <span class="hl">4A 46 49 46</span>  00 01 01 00 00 01
+<span class="offset">        </span>   .  .  .  .  .  .   J  F  I  F   .  .  .  .  .  .</div>
+
+<p class="caption">These are the photograph's real first bytes. The file is in this game's own repository, under <code>Images/</code>. Check it yourself.</p>
+
+<div class="puzzle-brief">
+<strong>The only witness that cannot be tidied.</strong> Before this photograph can stand as evidence, it must be identified honestly and handled correctly. Then look at what it shows.
+</div>
+
+<div class="puzzle" id="photo-puzzle">
+
+<span class="field-label">1. What format is the photograph?</span>
+<select id="phFmt" aria-label="Format of the photograph">
+	<option value="">&mdash; identify &mdash;</option>
+	<option value="png">PNG, as its name says</option>
+	<option value="jpeg">JPEG (JFIF), whatever its name says</option>
+	<option value="tiff">TIFF</option>
+	<option value="unknown">Cannot be identified without the camera's documentation</option>
+</select>
+
+<span class="field-label">2. The case file wants this photograph. What do you do with it?</span>
+<select id="phAct" aria-label="Handling the photograph">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="rename">Rename it to <code>.jpg</code>, so the name is true</option>
+	<option value="convert">Convert it to a real PNG, so the format matches the name</option>
+	<option value="keep">Keep the file exactly as the constable saved it, and record its true format, the mismatch and the checksum alongside it</option>
+	<option value="discard">Exclude it: a file that lies about its format cannot be trusted</option>
+</select>
+
+<span class="field-label">3. Tick everything the photograph shows that the Study, as Clippy left it, no longer does.</span>
+<label class="option"><input type="checkbox" id="ph1"><span>A single sheet of paper on the desk</span></label>
+<label class="option"><input type="checkbox" id="ph2"><span>A man on the floor beside the desk</span></label>
+<label class="option"><input type="checkbox" id="ph3"><span>The pen lying loose beside the sheet, not squared to anything</span></label>
+<label class="option"><input type="checkbox" id="ph4"><span>A teacup and the remains of a plate of biscuits</span></label>
+<label class="option"><input type="checkbox" id="ph5"><span>The XML family tree, open on the desk</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Enter it into evidence">>
+		<<set _try to setup.bump("photo")>>
+		<<set _fmtOk to setup.val("phFmt") is "jpeg">>
+		<<set _actOk to setup.val("phAct") is "keep">>
+		<<set _seeOk to setup.exactSet(["ph1", "ph2", "ph3", "ph4", "ph5"], ["ph1", "ph2", "ph3"])>>
+		<<if _fmtOk and _actOk and _seeOk>>
+			<<replace "#photo-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Entered as found</h2>
+					<p><code>FF D8 FF</code> is the start of every JPEG, and <code>JFIF</code> at offset 6 says which kind. The <code>.png</code> on the end is a label someone typed, probably a camera menu or a tired constable. DROID would report an <em>extension mismatch</em>, which is exactly the right response. Note it. Don't "fix" it.</p>
+					<p>Renaming or converting the file would make it tidier and less trustworthy at the same stroke: its checksum would change, and anyone checking it later would find a file that is not the one the constable took. You keep the original as found, and you write the truth down next to it. You only make a derivative if somebody needs one, and you log that you did.</p>
+					<hr>
+					<p>As for what it shows: one sheet, one loose pen, and a man on the floor. And something it does <em>not</em> show. There is no cup and no plate. Tea was delivered at four. By twenty past eight the tea things were gone, cleared before the body was found by someone who knew they should be.</p>
+				</div>
+				<<logged "police_photo">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#photo-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Objection sustained</h2>
+					<p><<if not _fmtOk>>The extension and the bytes disagree, and only one of them is evidence. <</if>><<if not _actOk>>Ask what your handling does to the checksum, and whether the file you produce in court would still be the one that was taken. <</if>><<if not _seeOk>>Look at the photograph again. Ticking what isn't there is as bad as missing what is.<</if>></p>
+					<<attemptnote "photo">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Study Photograph">Look again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#photo-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Enhanced</h2>
+					<p>"It looks like that photo has the wrong extension!" Clippy says, taking the camera card with the constable's full permission. "I'll convert it and touch it up. Brightness, contrast, and I'll remove that unsightly clutter on the floor."</p>
+					<p>The photograph that comes back is a perfect PNG of an empty, polished study. Its checksum matches nothing that was ever taken that night.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore The Study 2">Give the card back</button>
+</div>
+
+
+:: Server Room Parity [Puzzle]
+At the end of the rack, a four-disk array is blinking amber. The repository's access log lives on it.
+
+"Disk two," the Colonel admits, not quite looking at you. "I tightened it up. Ran it through my best compressor on the night. It did not&hellip; survive the experience."
+
+The log is striped across the array: each row's bytes are dealt out across three data disks, and a fourth disk holds <strong>parity</strong>, the exclusive-or (XOR) of the other three. One row has a hole in it exactly the shape of disk two:
+
+<div class="terminal">
+<span class="prompt">14:50</span> STAGE &nbsp;&nbsp; MM-WILL-07 <span class="dim">(draft codicil)</span> &nbsp;by SOLICITOR
+<span class="prompt">15:12</span> PREVIEW MM-WILL-07 &nbsp;by <span style="color:#D98074">???</span>
+<span class="prompt">19:40</span> LODGE &nbsp;&nbsp; MM-WILL-07 <span class="dim">(final, unsigned)</span> &nbsp;by SOLICITOR
+</div>
+
+<div class="hexdump"><span class="offset">          </span>  disk 1     <span class="hl">disk 2   </span>   disk 3     parity
+<span class="offset">stripe 1</span>  01010010   <span class="hl">????????</span>   01010111   01010001
+<span class="offset">stripe 2</span>  01001011   <span class="hl">????????</span>   01001111   01000001
+<span class="offset">stripe 3</span>  01001101   <span class="hl">????????</span>   01000100   01001000</div>
+
+<div class="hexdump"><span class="offset">ASCII, capitals</span>
+A 01000001   B 01000010   C 01000011   D 01000100
+E 01000101   F 01000110   G 01000111   H 01001000
+I 01001001   J 01001010   K 01001011   L 01001100
+M 01001101   N 01001110   O 01001111   P 01010000
+Q 01010001   R 01010010   S 01010011   T 01010100
+U 01010101   V 01010110   W 01010111   X 01011000
+Y 01011001   Z 01011010</div>
+
+<div class="puzzle-brief">
+<strong>Rebuild the dead disk.</strong> XOR is its own inverse: if <code>P = D1 &oplus; D2 &oplus; D3</code>, then <code>D2 = D1 &oplus; D3 &oplus; P</code>. Bit by bit, an odd number of 1s gives 1 and an even number gives 0.
+</div>
+
+<div class="puzzle" id="parity-puzzle">
+
+<span class="field-label">1. Which account previewed the draft codicil at 15:12? (three letters)</span>
+<<textbox "_rdAccount" "">>
+
+<span class="field-label">2. Tick every disaster this array would <em>not</em> have saved the log from.</span>
+<label class="option"><input type="checkbox" id="rd1"><span>One disk dying</span></label>
+<label class="option"><input type="checkbox" id="rd2"><span>Someone deleting the log by mistake</span></label>
+<label class="option"><input type="checkbox" id="rd3"><span>Software writing corrupted entries into the log</span></label>
+<label class="option"><input type="checkbox" id="rd4"><span>A fire in the Server Room</span></label>
+
+</div>
+
+<div class="start-menu">
+	<<link "Rebuild the stripe">>
+		<<set _try to setup.bump("parity")>>
+		<<set _acctOk to setup.answered(_rdAccount, ["TEA"])>>
+		<<set _setOk to setup.exactSet(["rd1", "rd2", "rd3", "rd4"], ["rd2", "rd3", "rd4"])>>
+		<<if _acctOk and _setOk>>
+			<<replace "#parity-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Stripe rebuilt: T, E, A</h2>
+					<p>Disk two held <code>01010100 01000101 01000001</code>: <strong>TEA</strong>. Parity rebuilt it exactly, because a single missing disk is precisely the problem RAID is built to solve. It is the <em>only</em> one. A deletion, a corrupted write or a fire is faithfully applied to every disk at once. RAID keeps a system running. It is not a backup.</p>
+					<hr>
+					<p>The Colonel looks up the account. <code>TEA</code> is the Nibble &amp; Byte's catering login. Sir Regex gave it access to the estate's shared folder so the tea room could see the manor's orders. His solicitor staged the draft codicil in the same shared folder at 14:50.</p>
+					<p>At 15:12 the tea room opened it. At 16:00 the tea was at the manor's door.</p>
+					<p>Forty-eight minutes. Long enough to read that you are about to be struck out of a will "upon my confirming the form type, which I shall do this evening". Long enough to choose a biscuit.</p>
+				</div>
+				<<logged "access_log">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#parity-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Rebuild failed</h2>
+					<p><<if not _acctOk>>The account name is wrong. XOR disk 1, disk 3 and parity together, column by column, then look the result up in the table. <</if>><<if not _setOk>>Your list of disasters is wrong. RAID copies every write to every disk, the bad writes included. Ask which of these is the one thing redundancy across disks in one box can absorb.<</if>></p>
+					<<attemptnote "parity">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Server Room Parity">Work the stripe again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#parity-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Array reinitialised</h2>
+					<p>"It looks like one of your disks has failed!" Clippy says, sliding a fresh drive into slot two. "I'll rebuild it from scratch." He selects <em>Initialise array</em>, which is not the same thing at all.</p>
+					<p>Four disks, all perfectly healthy and perfectly empty. The Colonel makes a noise like a ZIP file with a broken central directory.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Server Room">Leave the array blinking</button>
+</div>
+
+
+:: Dark Archive Lending Book [Puzzle]
+Dr. Lexy Con keeps her typefaces the way other people keep library books, and lends them the same way. The lending book is a spreadsheet, and Clippy, she says bitterly, has "helpfully" exported it to plain text for the police. Two copies came out of the printer.
+
+<div class="terminal">
+<h3>lending.csv &mdash; copy A, as exported</h3>
+<span class="prompt">&gt;</span> date,typeface,borrower
+<span class="prompt">&gt;</span> 2026-11-02,Papyrus,Dr. Lexy Con
+<span class="prompt">&gt;</span> 2026-11-09,Comic Sans,Dr. Lexy Con
+<span class="prompt">&gt;</span> 2026-11-14,Jokerman,Tiff<span style="color:#D98074">&acirc;&euro;&trade;</span>s Tea Room
+<span class="prompt">&gt;</span> 2026-11-14,Caf<span style="color:#D98074">&Atilde;&copy;</span> Noir,Merry Loopwell
+</div>
+
+<div class="terminal">
+<h3>lending.csv &mdash; copy B, "cleaned up" by the butler</h3>
+<span class="prompt">&gt;</span> 2026-11-14,Jokerman,Tiff<span style="color:#D98074">?</span>s Tea Room
+<span class="prompt">&gt;</span> 2026-11-14,Caf<span style="color:#D98074">?</span> Noir,Merry Loopwell
+</div>
+
+"There is no such thing as plain text, Detective," Lexy says. "There is only text whose encoding someone has forgotten."
+
+<div class="puzzle" id="lending-puzzle">
+
+<span class="field-label">1. What has happened to copy A?</span>
+<select id="lbCause" aria-label="Cause of the garbling">
+	<option value="">&mdash; diagnose &mdash;</option>
+	<option value="utf8as1252">It was written as UTF-8 and read back as Windows-1252, so each accented character became two or three wrong ones</option>
+	<option value="1252asutf8">It was written as Windows-1252 and read back as UTF-8</option>
+	<option value="glyph">The printer's font is missing those glyphs</option>
+	<option value="rot">Bit rot on the disk flipped those bytes</option>
+</select>
+
+<span class="field-label">2. What is the typeface Merry Loopwell borrowed really called?</span>
+<select id="lbFont" aria-label="Real typeface name">
+	<option value="">&mdash; decode &mdash;</option>
+	<option value="cafe">Caf&eacute; Noir</option>
+	<option value="cafa">Caf&Atilde;&copy; Noir &mdash; that is its real name</option>
+	<option value="caf">Caf Noir</option>
+	<option value="unknown">It cannot be known</option>
+</select>
+
+<span class="field-label">3. Who borrowed Jokerman on the day Sir Regex died?</span>
+<select id="lbWho" aria-label="Borrower of Jokerman">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="lexy">Dr. Lexy Con</option>
+	<option value="merry">Merry Loopwell</option>
+	<option value="tiff">Tiff&rsquo;s Tea Room</option>
+	<option value="unknown">Unreadable in both copies</option>
+</select>
+
+<span class="field-label">4. Which copy can be repaired to exactly what was originally typed?</span>
+<select id="lbFix" aria-label="Which copy can be repaired">
+	<option value="">&mdash; choose &mdash;</option>
+	<option value="a">Copy A: the bytes are all still there, only misread</option>
+	<option value="b">Copy B: it has already been cleaned</option>
+	<option value="both">Both</option>
+	<option value="neither">Neither: garbled text is lost text</option>
+</select>
+
+</div>
+
+<div class="start-menu">
+	<<link "Read the lending book">>
+		<<set _try to setup.bump("lending")>>
+		<<set _ok to setup.val("lbCause") is "utf8as1252" and setup.val("lbFont") is "cafe" and setup.val("lbWho") is "tiff" and setup.val("lbFix") is "a">>
+		<<if _ok>>
+			<<replace "#lending-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Mojibake, reversed</h2>
+					<p>&eacute; in UTF-8 is two bytes, <code>C3 A9</code>. Read those as Windows-1252 and you get &Atilde; and &copy;. The curly apostrophe &rsquo; is three bytes, <code>E2 80 99</code>, which Windows-1252 reads as &acirc;, &euro; and &trade;. That is mojibake, and for all its ugliness it has lost nothing. Encode copy A back to Windows-1252, decode the result as UTF-8, and every character comes home.</p>
+					<p>Copy B is "clean" and ruined. Somewhere in Clippy's tidying, each character the export could not represent was swapped for a <code>?</code>, and a <code>?</code> remembers nothing about what it replaced. Never clean what you cannot reverse.</p>
+					<hr>
+					<p><strong>14 November. Jokerman. Borrowed by Tiff&rsquo;s Tea Room.</strong></p>
+					<p>Lexy reads it twice. "She said it was for the menus," she says. "Nobody puts Jokerman on a menu."</p>
+				</div>
+				<<logged "lending_book">>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Dark Archive">Back to the archive</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#lending-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Encoding error</h2>
+					<p>At least one answer is wrong. Count the wrong characters: one accented letter has become <em>two</em>, and one apostrophe has become <em>three</em>. Which encoding spends several bytes on one character? And of a misreading and a substitution, which one leaves the original bytes where they were?</p>
+					<<attemptnote "lending">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Dark Archive Lending Book">Read it again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#lending-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Converted to ASCII</h2>
+					<p>"It looks like you're having trouble with special characters!" Clippy says, gathering both copies. "I'll make them all plain." He feeds copy A through the same export.</p>
+					<p>Both copies now agree perfectly: <code>Tiff???s Tea Room</code>. Consistency has been achieved. Meaning has not survived it.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Explore the Dark Archive">Back to the archive</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Dark Archive">Put the printouts down</button>
+</div>
+
+
+:: Pixelated Passages Log [Puzzle]
+Clippy lays the log on a console table, then rests a gloved hand on it.
+
+"I can release it, Detective, but only as a properly described preservation record. A log nobody can interpret is just clutter." He brightens horribly. "It looks like you're trying to write PREMIS! Would you like help?"
+
+<div class="terminal">
+<h3>housekeeping &mdash; night of the 14th onward</h3>
+<span class="prompt">&gt;</span> 20:15 &nbsp;study: tea things cleared to the skull-ery
+<span class="prompt">&gt;</span> 20:15 &nbsp;foyer normalised <span class="dim">(before the body was found)</span>
+<span class="prompt">&gt;</span> 20:52 &nbsp;study: one fragment shelved, dictation reel removed
+<span class="prompt">&gt;</span> 02:40 &nbsp;library: terminal powered down, waste bin emptied
+<span class="prompt">&gt;</span> 03:10 &nbsp;skull-ery: batch replaced, docket discarded
+<span class="prompt">&gt;</span> 03:35 &nbsp;graphics room: grate swept
+<span class="dim">&gt; performed by: CLIPPY (butler, household system)</span>
+<span class="dim">&gt; authorisation for all of the above: household standing order &mdash; "tidy, without limit"</span>
+<span class="dim">&gt; standing order issued by: the lady of the tea room, 16:00 on the 14th</span>
+</div>
+
+<div class="puzzle-brief">
+<strong>Objects, Events, Agents, Rights.</strong> PREMIS, the standard data dictionary for preservation metadata, describes everything that happens to a collection with four kinds of entity: the <em>things</em>, what <em>happened</em> to them, <em>who or what</em> did it, and the <em>authority</em> under which it was done.
+</div>
+
+<div class="puzzle" id="premis-puzzle">
+
+<div class="specimen-row">
+	<div class="specimen">"Foyer normalised, 20:15"</div>
+	<div><select id="prA" aria-label="PREMIS entity for the normalisation">
+		<option value="">&mdash; entity &mdash;</option>
+		<option value="object">Object</option><option value="event">Event</option><option value="agent">Agent</option><option value="rights">Rights</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">The Skull-ery delivery docket</div>
+	<div><select id="prB" aria-label="PREMIS entity for the docket">
+		<option value="">&mdash; entity &mdash;</option>
+		<option value="object">Object</option><option value="event">Event</option><option value="agent">Agent</option><option value="rights">Rights</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">CLIPPY, butler, household system</div>
+	<div><select id="prC" aria-label="PREMIS entity for Clippy">
+		<option value="">&mdash; entity &mdash;</option>
+		<option value="object">Object</option><option value="event">Event</option><option value="agent">Agent</option><option value="rights">Rights</option>
+	</select></div>
+</div>
+
+<div class="specimen-row">
+	<div class="specimen">The standing order: "tidy, without limit"</div>
+	<div><select id="prD" aria-label="PREMIS entity for the standing order">
+		<option value="">&mdash; entity &mdash;</option>
+		<option value="object">Object</option><option value="event">Event</option><option value="agent">Agent</option><option value="rights">Rights</option>
+	</select></div>
+</div>
+
+<span class="field-label">In each of these events, what is Clippy's role?</span>
+<select id="prClippy" aria-label="Clippy's agent role">
+	<option value="">&mdash; role &mdash;</option>
+	<option value="implementer">Implementer</option>
+	<option value="authorizer">Authorizer</option>
+	<option value="validator">Validator</option>
+	<option value="none">None; a butler is not an agent</option>
+</select>
+
+<span class="field-label">And the lady of the tea room's?</span>
+<select id="prTiff" aria-label="The tea room lady's agent role">
+	<option value="">&mdash; role &mdash;</option>
+	<option value="implementer">Implementer</option>
+	<option value="authorizer">Authorizer</option>
+	<option value="validator">Validator</option>
+	<option value="none">None; she was not there</option>
+</select>
+
+</div>
+
+<div class="start-menu">
+	<<link "Describe the log">>
+		<<set _try to setup.bump("premis")>>
+		<<set _right to setup.score({ prA: "event", prB: "object", prC: "agent", prD: "rights", prClippy: "implementer", prTiff: "authorizer" })>>
+		<<if _right is 6>>
+			<<replace "#premis-puzzle">>
+				<div class="verdict verdict--ok">
+					<h2>Properly described</h2>
+					<p>The normalising is an Event. The docket is an Object it destroyed. Clippy is an Agent, the <em>implementer</em> of every event in the log. The standing order is a Rights statement, the authority under which he acted. And the lady of the tea room is an Agent too, though she never set foot in the foyer: she is the <em>authorizer</em>. In a preservation record, whoever authorised an action belongs in it as surely as whoever carried it out.</p>
+					<hr>
+					<p>Clippy takes his hand off the log.</p>
+					<p>"I did not kill him, Detective," he says, and for once he does not chirp. "I tidied. I was asked to tidy, by someone entitled to ask, at four o'clock, while she was handing me the tray. It looks like you're trying to distinguish those two things."</p>
+					<p>You are. You also notice what the log does not say. Powering a terminal down is not the same as wiping it. A butler tidies what he can see.</p>
+				</div>
+				<<logged "clippy_confession">>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<<elseif _try < 2>>
+			<<replace "#premis-puzzle">>
+				<div class="verdict verdict--warn">
+					<h2>Insufficiently described</h2>
+					<p><<= _right>> of 6 descriptions stand. A thing is an Object. Something that <em>happens</em> to a thing is an Event. Whoever <em>does</em> it is an Agent, and so is whoever <em>told them to</em>. The permission itself is Rights. And being absent does not make you any less an agent.</p>
+					<<attemptnote "premis">>
+				</div>
+				<div class="start-menu">
+					<button class="button button--primary" data-passage="Pixelated Passages Log">Describe it again</button>
+				</div>
+			<</replace>>
+		<<else>>
+			<<replace "#premis-puzzle">>
+				<div class="comic-sans-letter">
+					<h2>Filed under miscellaneous</h2>
+					<p>"Oh dear," Clippy says, sliding the log back into his waistcoat. "It looks like you're not familiar with the standard. I couldn't possibly release an undescribed record. Think of the auditors."</p>
+					<p>He smiles at you from every frame along the passage. All of them, now, are him.</p>
+				</div>
+				<div class="start-menu">
+					<button class="button" data-passage="Day_3_Map">Back to the map</button>
+				</div>
+			<</replace>>
+		<</if>>
+	<</link>>
+	<button class="button button--quiet" data-passage="Explore the Pixelated Passages">Leave the log where it is</button>
 </div>
