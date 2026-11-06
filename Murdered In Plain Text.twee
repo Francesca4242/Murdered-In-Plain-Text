@@ -1337,7 +1337,7 @@ input[type="checkbox"], input[type="radio"] {
 .map-figure .c3-3 { left: 65.81%; width: 32.31%; }
 
 
-:: Widgets [widget]
+:: Widgets [widget nobr]
 <<widget "snow">>
 	<<for _i to 0; _i < 40; _i++>>
 		<<set _size to random(2, 7)>>
